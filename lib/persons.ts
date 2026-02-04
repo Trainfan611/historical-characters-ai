@@ -17,7 +17,7 @@ export async function findOrCreatePerson(
     },
   });
 
-  let personInfo: PersonInfo;
+  let personInfo: PersonInfo | null;
 
   if (person) {
     // Если нашли в БД, используем данные из БД

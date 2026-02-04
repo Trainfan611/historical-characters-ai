@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  telegramId    String    @unique
+  username      String?
+  firstName     String?
+  lastName      String?
+  photoUrl      String?
+  isSubscribed  Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  generations   Generation[]
+  subscriptions SubscriptionCheck[]
+  
+  @@index([telegramId])
+}
+
+model HistoricalPerson {
+  id          String   @id @default(cuid())
+  name        String
+  nameEn      String?
+  description String?  @db.Text
+  era         String?
+  category    String?
+  country     String?
+  birthYear   Int?
+  deathYear   Int?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  generations Generation[]
+  
+  @@index([name])
+  @@index([era])
+  @@index([category])
+}
+
+model Generation {
+  id                String   @id @default(cuid())
+  userId            String
+  historicalPersonId String?
+  personName        String
+  prompt            String   @db.Text
+  imageUrl          String
+  style             String?
+  status            String   @default("completed")
+  errorMessage      String?  @db.Text
+  createdAt         DateTime @default(now())
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  historicalPerson  HistoricalPerson? @relation(fields: [historicalPersonId], references: [id])
+  
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model SubscriptionCheck {
+  id            String   @id @default(cuid())
+  userId        String
+  channelId     String
+  isSubscribed  Boolean  @default(false)
+  lastChecked   DateTime @default(now())
+  checkedAt     DateTime @default(now())
+  
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, channelId])
+  @@index([userId])
+}

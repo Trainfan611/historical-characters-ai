@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 declare global {
   interface Window {
@@ -11,11 +12,12 @@ declare global {
 
 export function TelegramLogin() {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     window.onTelegramAuth = async (user: any) => {
       try {
-        await signIn('credentials', {
+        const result = await signIn('credentials', {
           id: user.id.toString(),
           hash: user.hash,
           username: user.username || '',
@@ -23,9 +25,15 @@ export function TelegramLogin() {
           last_name: user.last_name || '',
           photo_url: user.photo_url || '',
           auth_date: user.auth_date.toString(),
-          redirect: true,
+          redirect: false,
           callbackUrl: '/generate',
         });
+
+        if (result?.ok && result.url) {
+          router.push(result.url);
+        } else if (result?.error) {
+          console.error('Login error:', result.error);
+        }
       } catch (error) {
         console.error('Login error:', error);
       }
@@ -54,7 +62,7 @@ export function TelegramLogin() {
         containerRef.current.innerHTML = '';
       }
     };
-  }, []);
+  }, [router]);
 
   return <div ref={containerRef} />;
 }

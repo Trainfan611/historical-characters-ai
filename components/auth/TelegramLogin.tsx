@@ -29,11 +29,13 @@ export function TelegramLogin() {
           callbackUrl: '/generate',
         });
 
-        if (result?.ok && result.url) {
-          router.push(result.url);
-        } else if (result?.error) {
+        if (result?.error) {
           console.error('Login error:', result.error);
+          return;
         }
+
+        // Успешный логин — сразу отправляем на страницу генерации
+        router.push('/generate');
       } catch (error) {
         console.error('Login error:', error);
       }

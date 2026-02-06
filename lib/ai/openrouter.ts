@@ -10,14 +10,12 @@ const REPLICATE_API_URL = 'https://api.replicate.com/v1/predictions';
  * Если REPLICATE_API_KEY не установлен, можно использовать OpenRouter через другой endpoint
  */
 export async function generateImage(prompt: string): Promise<string> {
-  // Попытка использовать Replicate если доступен
-  if (REPLICATE_API_KEY && !process.env.OPENROUTER_API_KEY) {
-    return await generateWithReplicate(prompt);
+  if (!REPLICATE_API_KEY) {
+    throw new Error('REPLICATE_API_KEY is not set. Please configure Replicate API key in environment variables.');
   }
 
-  // Fallback: используем OpenRouter через правильный endpoint
-  // Или можно использовать другой сервис
-  return await generateWithOpenRouter(prompt);
+  // Используем Replicate для генерации изображений
+  return await generateWithReplicate(prompt);
 }
 
 /**

@@ -135,7 +135,33 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Error generating image:', error);
+    console.error('[Generate] Error in generation pipeline:', {
+      message: error.message,
+      stack: error.stack,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+    
+    // Определяем тип ошибки для более понятного сообщения
+    let errorMessage = 'Failed to generate image';
+    let errorDetails = error.message;
+    
+    if (error.message?.includes('PERPLEXITY_API_KEY')) {
+      errorMessage = 'Failed to search for person information';
+      errorDetails = 'Perplexity API key is missing or invalid';
+    } else if (error.message?.includes('OPENAI_API_KEY')) {
+      errorMessage = 'Failed to generate image prompt';
+      errorDetails = 'OpenAI API key is missing or invalid';
+    } else if (error.message?.includes('REPLICATE_API_KEY')) {
+      errorMessage = 'Failed to generate image';
+      errorDetails = 'Replicate API key is missing or invalid';
+    } else if (error.message?.includes('Failed to find information')) {
+      errorMessage = error.message;
+      errorDetails = 'Could not find information about this person';
+    } else if (error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+      errorDetails = error.response.data.details || error.message;
+    }
     
     // Сохранение ошибки в БД если есть пользователь
     try {
@@ -146,24 +172,36 @@ export async function POST(request: NextRequest) {
         });
         
         if (dbUser) {
+          // Пытаемся получить personName из body, но не блокируем если не получится
+          let personNameForError = 'Unknown';
+          try {
+            const body = await request.json();
+            personNameForError = body.personName || 'Unknown';
+          } catch (e) {
+            // Игнорируем ошибку парсинга body
+          }
+          
           await prisma.generation.create({
             data: {
               userId: dbUser.id,
-              personName: (await request.json()).personName || 'Unknown',
+              personName: personNameForError,
               prompt: '',
               imageUrl: '',
               status: 'failed',
-              errorMessage: error.message || 'Unknown error',
+              errorMessage: errorDetails,
             },
           });
         }
       }
     } catch (dbError) {
-      console.error('Error saving failed generation:', dbError);
+      console.error('[Generate] Error saving failed generation:', dbError);
     }
 
     return NextResponse.json(
-      { error: 'Failed to generate image', message: error.message },
+      { 
+        error: errorMessage,
+        details: errorDetails,
+      },
       { status: 500 }
     );
   }

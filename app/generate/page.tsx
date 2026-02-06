@@ -115,13 +115,38 @@ export default function GeneratePage() {
 
       if (response.data.success) {
         setGeneratedImage(response.data.generation.imageUrl);
+        setError(null); // Очищаем ошибку при успехе
+      } else {
+        setError(response.data.error || 'Не удалось сгенерировать изображение');
       }
     } catch (error: any) {
+      console.error('Generation error:', error);
+      
       if (error.response?.data?.code === 'SUBSCRIPTION_REQUIRED') {
         setError('Необходимо подписаться на канал. Проверьте подписку и попробуйте снова.');
         checkSubscription();
       } else {
-        setError(error.response?.data?.error || 'Ошибка при генерации изображения');
+        // Показываем детальную информацию об ошибке
+        const errorMessage = error.response?.data?.error || error.response?.data?.details || error.message || 'Ошибка при генерации изображения';
+        const details = error.response?.data?.details;
+        
+        // Формируем понятное сообщение для пользователя
+        let userMessage = errorMessage;
+        
+        // Переводим технические ошибки на понятный язык
+        if (errorMessage.includes('PERPLEXITY_API_KEY')) {
+          userMessage = 'Ошибка поиска информации. Проверьте настройки API.';
+        } else if (errorMessage.includes('OPENAI_API_KEY')) {
+          userMessage = 'Ошибка генерации промпта. Проверьте настройки API.';
+        } else if (errorMessage.includes('REPLICATE_API_KEY')) {
+          userMessage = 'Ошибка генерации изображения. Проверьте настройки API.';
+        } else if (errorMessage.includes('Failed to find information')) {
+          userMessage = `Не удалось найти информацию о "${personName.trim()}". Попробуйте указать полное имя (например, "Владимир Путин" вместо "Путин").`;
+        } else if (errorMessage.includes('Failed to generate image')) {
+          userMessage = 'Не удалось сгенерировать изображение. Попробуйте ещё раз или проверьте настройки.';
+        }
+        
+        setError(userMessage);
       }
     } finally {
       setIsGenerating(false);

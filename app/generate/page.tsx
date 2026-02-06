@@ -161,20 +161,24 @@ export default function GeneratePage() {
                 Для генерации изображений необходимо подписаться на наш Telegram канал
               </p>
               <div className="flex flex-col sm:flex-row gap-3 items-center">
-                {channelLink && (
+                {channelLink ? (
                   <a
                     href={channelLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-5 py-2 text-xs sm:text-sm rounded-full bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors cursor-pointer"
+                    className="px-5 py-2 text-xs sm:text-sm rounded-full bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors cursor-pointer order-1"
                   >
                     Подписаться на канал
                   </a>
+                ) : (
+                  <div className="px-5 py-2 text-xs sm:text-sm rounded-full bg-blue-500/50 text-white/50 font-medium cursor-not-allowed order-1">
+                    Подписаться на канал
+                  </div>
                 )}
                 <button
                   type="button"
                   onClick={checkSubscription}
-                  className="px-5 py-2 text-xs sm:text-sm rounded-full bg-amber-400 text-slate-950 font-medium hover:bg-amber-300 transition-colors cursor-pointer"
+                  className="px-5 py-2 text-xs sm:text-sm rounded-full bg-amber-400 text-slate-950 font-medium hover:bg-amber-300 transition-colors cursor-pointer order-2"
                 >
                   Проверить подписку
                 </button>

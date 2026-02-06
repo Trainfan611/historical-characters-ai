@@ -91,8 +91,8 @@ export function ImageCarousel() {
   const duplicatedImages = [...images, ...images, ...images]; // Для бесшовной прокрутки
 
   return (
-    <div className="relative w-full overflow-hidden mt-8">
-      <div className="relative h-64 sm:h-80">
+    <div className="relative w-full overflow-hidden mt-8 max-w-md mx-auto">
+      <div className="relative h-32 sm:h-40">
         <div
           className="flex transition-transform duration-1000 ease-in-out h-full"
           style={{
@@ -103,10 +103,10 @@ export function ImageCarousel() {
           {duplicatedImages.map((image, index) => (
             <div
               key={`${image.id}-${index}`}
-              className="flex-shrink-0 px-2"
+              className="flex-shrink-0 px-1.5"
               style={{ width: `${100 / visibleCount}%` }}
             >
-              <div className="relative w-full h-full rounded-xl overflow-hidden border border-slate-800/80 bg-slate-900/60 shadow-lg">
+              <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-800/80 bg-slate-900/60 shadow-md">
                 <Image
                   src={image.url}
                   alt={image.alt}
@@ -115,8 +115,8 @@ export function ImageCarousel() {
                   sizes="(max-width: 768px) 100vw, 33vw"
                   unoptimized // Для внешних URL может потребоваться
                 />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/90 to-transparent p-3">
-                  <p className="text-xs text-slate-200 font-medium truncate">
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/90 to-transparent p-1.5">
+                  <p className="text-[10px] text-slate-200 font-medium truncate">
                     {image.alt}
                   </p>
                 </div>
@@ -127,15 +127,15 @@ export function ImageCarousel() {
       </div>
       
       {/* Индикаторы */}
-      <div className="flex justify-center gap-2 mt-4">
+      <div className="flex justify-center gap-1.5 mt-2">
         {images.slice(0, Math.min(images.length, 10)).map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentIndex(index)}
-            className={`h-2 rounded-full transition-all ${
+            className={`h-1.5 rounded-full transition-all ${
               index === currentIndex
-                ? 'w-8 bg-sky-400'
-                : 'w-2 bg-slate-600 hover:bg-slate-500'
+                ? 'w-6 bg-sky-400'
+                : 'w-1.5 bg-slate-600 hover:bg-slate-500'
             }`}
             aria-label={`Перейти к изображению ${index + 1}`}
           />

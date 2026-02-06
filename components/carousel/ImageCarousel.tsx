@@ -107,12 +107,13 @@ export function ImageCarousel() {
               className="flex-shrink-0 px-1.5 h-full"
               style={{ width: `${100 / visibleCount}%` }}
             >
-              <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-800/80 bg-slate-900/60 shadow-md">
+              <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-800/80 bg-slate-900/60 shadow-md" style={{ aspectRatio: '16/9' }}>
                 <Image
                   src={image.url}
                   alt={image.alt}
                   fill
-                  className="object-cover w-full h-full"
+                  className="object-cover"
+                  style={{ objectPosition: 'center' }}
                   sizes="(max-width: 768px) 100vw, 33vw"
                   unoptimized // Для внешних URL может потребоваться
                 />

@@ -22,6 +22,8 @@ model User {
   subscriptions SubscriptionCheck[]
   
   @@index([telegramId])
+  @@index([telegramId, isSubscribed]) // Составной индекс для быстрой проверки подписки
+  @@index([createdAt])
 }
 
 model HistoricalPerson {
@@ -62,6 +64,8 @@ model Generation {
   
   @@index([userId])
   @@index([createdAt])
+  @@index([userId, createdAt]) // Составной индекс для истории генераций
+  @@index([userId, status, createdAt]) // Для подсчёта генераций за день
 }
 
 model SubscriptionCheck {

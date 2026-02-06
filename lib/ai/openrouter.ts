@@ -1,19 +1,19 @@
 import axios from 'axios';
 
 // Используем Replicate API для генерации изображений (Flux модель)
-// Альтернативно можно использовать OpenRouter, но он требует другой подход
-const REPLICATE_API_KEY = process.env.REPLICATE_API_KEY || process.env.OPENROUTER_API_KEY;
+const REPLICATE_API_KEY = process.env.REPLICATE_API_KEY;
 const REPLICATE_API_URL = 'https://api.replicate.com/v1/predictions';
 
 /**
  * Генерация изображения через Replicate (Flux модель)
- * Если REPLICATE_API_KEY не установлен, можно использовать OpenRouter через другой endpoint
  */
 export async function generateImage(prompt: string): Promise<string> {
   if (!REPLICATE_API_KEY) {
-    throw new Error('REPLICATE_API_KEY is not set. Please configure Replicate API key in environment variables.');
+    console.error('[Replicate] REPLICATE_API_KEY is not set in environment variables');
+    throw new Error('REPLICATE_API_KEY is not set. Please configure Replicate API key in Railway Variables. Get your key at https://replicate.com/account/api-tokens');
   }
 
+  console.log('[Replicate] API key found, starting generation...');
   // Используем Replicate для генерации изображений
   return await generateWithReplicate(prompt);
 }
@@ -34,7 +34,7 @@ async function generateWithReplicate(prompt: string): Promise<string> {
     const createResponse = await axios.post(
       REPLICATE_API_URL,
       {
-        version: 'black-forest-labs/flux-1.1-pro', // или 'black-forest-labs/flux-dev' для быстрой генерации
+        version: 'black-forest-labs/flux-dev', // Используем flux-dev для более быстрой генерации
         input: {
           prompt: prompt,
           num_outputs: 1,

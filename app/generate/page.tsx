@@ -33,12 +33,15 @@ export default function GeneratePage() {
     try {
       const response = await axios.get('/api/subscription/check');
       setSubscriptionStatus(response.data);
-      
-      if (!response.data.isSubscribed) {
-        setError('Необходимо подписаться на канал для генерации изображений');
+
+      if (response.data.isSubscribed) {
+        setError('Подписка подтверждена. Теперь вы можете генерировать изображение.');
+      } else {
+        setError('Необходимо подписаться на канал для генерации изображений, затем нажмите «Проверить подписку» ещё раз.');
       }
     } catch (error) {
       console.error('Error checking subscription:', error);
+      setError('Не удалось проверить подписку. Попробуйте ещё раз.');
     }
   };
 
@@ -139,16 +142,19 @@ export default function GeneratePage() {
           </div>
 
         {!subscriptionStatus?.isSubscribed && (
-          <div className="bg-amber-900/20 border border-amber-500/40 rounded-xl p-4 mb-6">
-            <p className="text-amber-100 mb-2 text-sm">
-              Для генерации изображений необходимо подписаться на наш Telegram канал
-            </p>
-            <button
-              onClick={checkSubscription}
-              className="px-4 py-2 text-xs rounded-full bg-amber-400 text-slate-950 font-medium hover:bg-amber-300 transition-colors"
-            >
-              Проверить подписку
-            </button>
+          <div className="mb-6 flex justify-center">
+            <div className="w-full max-w-3xl bg-amber-900/20 border border-amber-500/40 rounded-xl px-6 py-4 flex flex-col items-center gap-3 text-center">
+              <p className="text-amber-100 text-sm">
+                Для генерации изображений необходимо подписаться на наш Telegram канал
+              </p>
+              <button
+                type="button"
+                onClick={checkSubscription}
+                className="px-5 py-2 text-xs sm:text-sm rounded-full bg-amber-400 text-slate-950 font-medium hover:bg-amber-300 transition-colors cursor-pointer"
+              >
+                Проверить подписку
+              </button>
+            </div>
           </div>
         )}
 

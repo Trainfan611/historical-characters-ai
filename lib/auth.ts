@@ -1,7 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { prisma } from './db';
-import { verifyTelegramData, TelegramAuthData } from './telegram';
+import { prisma } from '@/lib/db';
+import { verifyTelegramData, TelegramAuthData } from '@/lib/telegram';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -38,8 +38,8 @@ export const authOptions: NextAuthOptions = {
         // Временное упрощение: если verifyTelegramData возвращает false или выбрасывает ошибку,
         // всё равно продолжаем логин, чтобы упростить отладку.
         try {
-          const isValid = verifyTelegramData(telegramData);
-          if (!isValid) {
+        const isValid = verifyTelegramData(telegramData);
+        if (!isValid) {
             console.warn('[Auth] Telegram data verification failed for id:', credentials.id);
           }
         } catch (e) {

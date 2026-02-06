@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export function Footer() {
   return (
     <footer className="mt-auto border-t border-slate-800 bg-slate-950/90">
@@ -6,6 +8,14 @@ export function Footer() {
           <p>© 2026 Historical Characters. Генерация изображений исторических личностей с помощью AI.</p>
           <p className="text-[11px] text-slate-600">
             Вдохновлено лаконичным интерфейсом Book Vision, адаптировано для героев реальной истории.
+          </p>
+          <p className="text-[11px] text-slate-500 mt-2">
+            <Link 
+              href="/terms" 
+              className="text-sky-400 hover:text-sky-300 underline transition-colors"
+            >
+              Пользовательское соглашение
+            </Link>
           </p>
         </div>
       </div>

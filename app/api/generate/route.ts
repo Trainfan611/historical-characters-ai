@@ -30,6 +30,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Проверка лимита генераций (15 в день)
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    
+    const todayGenerations = await prisma.generation.count({
+      where: {
+        userId: dbUser.id,
+        status: 'completed',
+        createdAt: {
+          gte: today,
+        },
+      },
+    });
+
+    const DAILY_LIMIT = 15;
+    if (todayGenerations >= DAILY_LIMIT) {
+      return NextResponse.json(
+        { 
+          error: 'Daily generation limit reached',
+          code: 'DAILY_LIMIT_REACHED',
+          limit: DAILY_LIMIT,
+          used: todayGenerations,
+          remaining: 0,
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { personName, personId, style = 'realistic' } = body;
 

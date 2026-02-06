@@ -22,6 +22,12 @@ export default function GeneratePage() {
   } | null>(null);
   const [channelLink, setChannelLink] = useState<string | null>(null);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
+  const [generationLimit, setGenerationLimit] = useState<{
+    limit: number;
+    used: number;
+    remaining: number;
+    isLimitReached: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -29,6 +35,7 @@ export default function GeneratePage() {
     } else if (status === 'authenticated') {
       checkSubscription();
       fetchChannelLink();
+      fetchGenerationLimit();
     }
   }, [status, router]);
 
@@ -40,6 +47,15 @@ export default function GeneratePage() {
       }
     } catch (error) {
       console.error('Error fetching channel link:', error);
+    }
+  };
+
+  const fetchGenerationLimit = async () => {
+    try {
+      const response = await axios.get('/api/generations/limit');
+      setGenerationLimit(response.data);
+    } catch (error) {
+      console.error('Error fetching generation limit:', error);
     }
   };
 
@@ -116,6 +132,8 @@ export default function GeneratePage() {
       if (response.data.success) {
         setGeneratedImage(response.data.generation.imageUrl);
         setError(null); // Очищаем ошибку при успехе
+        // Обновляем лимит после успешной генерации
+        fetchGenerationLimit();
       } else {
         setError(response.data.error || 'Не удалось сгенерировать изображение');
       }
@@ -125,6 +143,9 @@ export default function GeneratePage() {
       if (error.response?.data?.code === 'SUBSCRIPTION_REQUIRED') {
         setError('Необходимо подписаться на канал. Проверьте подписку и попробуйте снова.');
         checkSubscription();
+      } else if (error.response?.data?.code === 'DAILY_LIMIT_REACHED') {
+        setError(`Достигнут дневной лимит генераций (${error.response.data.limit}/день). Лимит обновится завтра.`);
+        fetchGenerationLimit(); // Обновляем лимит
       } else {
         // Показываем детальную информацию об ошибке
         const errorMessage = error.response?.data?.error || error.response?.data?.details || error.message || 'Ошибка при генерации изображения';
@@ -187,6 +208,23 @@ export default function GeneratePage() {
               образ, опираясь на описания из разных источников.
             </p>
           </div>
+
+        {/* Индикатор лимита генераций */}
+        {subscriptionStatus?.isSubscribed && generationLimit && (
+          <div className="mb-6 flex justify-center">
+            <div className="w-full max-w-3xl bg-amber-900/20 border border-amber-500/40 rounded-xl px-6 py-3 flex items-center justify-center gap-2 text-center">
+              <span className="text-amber-200 text-lg">✦</span>
+              <span className="text-amber-100 text-sm">
+                {generationLimit.remaining} из {generationLimit.limit} генераций сегодня
+              </span>
+              {generationLimit.isLimitReached && (
+                <span className="text-amber-300 text-xs ml-2">
+                  (Лимит обновится завтра)
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {!subscriptionStatus?.isSubscribed && (
           <div className="mb-6 flex justify-center">
@@ -274,11 +312,17 @@ export default function GeneratePage() {
 
             <button
               onClick={handleGenerate}
-              disabled={isGenerating || !subscriptionStatus?.isSubscribed}
+              disabled={isGenerating || !subscriptionStatus?.isSubscribed || (generationLimit?.isLimitReached ?? false)}
               className="mt-4 w-full px-6 py-3 rounded-full bg-sky-400 text-slate-950 font-semibold text-sm hover:bg-sky-300 disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors"
             >
               {isGenerating ? 'Генерация...' : 'Сгенерировать изображение'}
             </button>
+            
+            {generationLimit?.isLimitReached && (
+              <p className="mt-2 text-xs text-amber-400 text-center">
+                Лимит помогает сервису оставаться бесплатным для всех
+              </p>
+            )}
 
             {error && (
               <div className="mt-4 p-3 bg-rose-900/30 border border-rose-600/60 rounded-xl text-rose-100 text-sm">

@@ -28,13 +28,21 @@ async function generateWithReplicate(prompt: string): Promise<string> {
 
   try {
     console.log('[Replicate] Starting image generation with prompt:', prompt.substring(0, 100));
+    console.log('[Replicate] API key length:', REPLICATE_API_KEY?.length || 0);
+    console.log('[Replicate] API key preview:', REPLICATE_API_KEY ? `${REPLICATE_API_KEY.substring(0, 10)}...` : 'NOT SET');
+    
+    // Проверяем формат токена
+    const token = REPLICATE_API_KEY?.trim();
+    if (!token || token.length < 10) {
+      throw new Error('REPLICATE_API_KEY appears to be invalid (too short or empty)');
+    }
     
     // Используем правильный формат для Replicate API
-    // Model: black-forest-labs/flux-1.1-pro или flux-dev
+    // Model: black-forest-labs/flux-dev для быстрой генерации
     const createResponse = await axios.post(
       REPLICATE_API_URL,
       {
-        version: 'black-forest-labs/flux-dev', // Используем flux-dev для более быстрой генерации
+        version: 'black-forest-labs/flux-dev',
         input: {
           prompt: prompt,
           num_outputs: 1,
@@ -44,7 +52,7 @@ async function generateWithReplicate(prompt: string): Promise<string> {
       },
       {
         headers: {
-          Authorization: `Token ${REPLICATE_API_KEY}`,
+          Authorization: `Token ${token}`, // Убеждаемся, что используем очищенный токен
           'Content-Type': 'application/json',
         },
       }
@@ -95,7 +103,24 @@ async function generateWithReplicate(prompt: string): Promise<string> {
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
+      statusText: error.response?.statusText,
     });
+    
+    // Специальная обработка ошибки 401 (неверный токен)
+    if (error.response?.status === 401) {
+      const detail = error.response?.data?.detail || error.response?.data?.title || 'Invalid API token';
+      throw new Error(`REPLICATE_API_KEY is invalid or expired. ${detail}. Please check your Replicate API token at https://replicate.com/account/api-tokens`);
+    }
+    
+    // Обработка других ошибок
+    if (error.response?.status === 400) {
+      throw new Error(`Invalid request to Replicate API: ${error.response?.data?.detail || error.message}`);
+    }
+    
+    if (error.response?.status === 402) {
+      throw new Error('Replicate API payment required. Please check your Replicate account balance.');
+    }
+    
     throw new Error(`Failed to generate image: ${error.message}`);
   }
 }

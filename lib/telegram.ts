@@ -53,17 +53,30 @@ export async function checkChannelSubscription(
   }
 
   try {
+    // Нормализуем channelId: убираем @ если есть, оставляем как есть для числовых ID
+    const normalizedChannelId = channelId.startsWith('@') ? channelId : channelId;
+    
+    console.log('[Telegram] Checking subscription:', { userId, channelId: normalizedChannelId });
+    
     const response = await axios.get(`${TELEGRAM_API_URL}/getChatMember`, {
       params: {
-        chat_id: channelId,
+        chat_id: normalizedChannelId,
         user_id: userId,
       },
     });
 
     const status = response.data.result?.status;
-    return status === 'member' || status === 'administrator' || status === 'creator';
-  } catch (error) {
-    console.error('Error checking subscription:', error);
+    console.log('[Telegram] Subscription status:', { userId, status, result: response.data.result });
+    
+    const isSubscribed = status === 'member' || status === 'administrator' || status === 'creator';
+    return isSubscribed;
+  } catch (error: any) {
+    console.error('[Telegram] Error checking subscription:', {
+      userId,
+      channelId,
+      error: error.response?.data || error.message,
+      status: error.response?.status,
+    });
     return false;
   }
 }

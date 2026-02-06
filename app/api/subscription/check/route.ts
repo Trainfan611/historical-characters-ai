@@ -23,7 +23,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Проверка подписки через Telegram API
+    console.log('[Subscription Check] Starting check for user:', userId, 'channel:', channelId);
     const isSubscribed = await checkChannelSubscription(userId, channelId);
+    console.log('[Subscription Check] Result:', isSubscribed);
 
     // Обновление или создание записи в БД
     const dbUser = await prisma.user.findUnique({
@@ -59,11 +61,21 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ isSubscribed });
-  } catch (error) {
-    console.error('Error checking subscription:', error);
+    return NextResponse.json({ 
+      isSubscribed,
+      needsRecheck: false,
+    });
+  } catch (error: any) {
+    console.error('[Subscription Check] Error:', {
+      error: error.message,
+      stack: error.stack,
+      response: error.response?.data,
+    });
     return NextResponse.json(
-      { error: 'Failed to check subscription' },
+      { 
+        error: 'Failed to check subscription',
+        details: error.message,
+      },
       { status: 500 }
     );
   }

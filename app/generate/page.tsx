@@ -21,6 +21,7 @@ export default function GeneratePage() {
     needsRecheck: boolean;
   } | null>(null);
   const [channelLink, setChannelLink] = useState<string | null>(null);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -43,18 +44,26 @@ export default function GeneratePage() {
   };
 
   const checkSubscription = async () => {
+    setIsCheckingSubscription(true);
+    setError(null);
     try {
-      const response = await axios.get('/api/subscription/check');
-      setSubscriptionStatus(response.data);
-
+      // Используем POST для реальной проверки через Telegram API
+      const response = await axios.post('/api/subscription/check');
+      
       if (response.data.isSubscribed) {
-        setError('Подписка подтверждена. Теперь вы можете генерировать изображение.');
+        setError(null); // Очищаем ошибку при успешной подписке
+        // Обновляем статус подписки
+        setSubscriptionStatus({ isSubscribed: true, needsRecheck: false });
       } else {
-        setError('Необходимо подписаться на канал для генерации изображений, затем нажмите «Проверить подписку» ещё раз.');
+        setError('Необходимо подписаться на канал для генерации изображений. Подпишитесь на канал и нажмите «Проверить подписку» ещё раз.');
+        setSubscriptionStatus({ isSubscribed: false, needsRecheck: false });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error checking subscription:', error);
-      setError('Не удалось проверить подписку. Попробуйте ещё раз.');
+      const errorMessage = error.response?.data?.error || error.response?.data?.details || 'Не удалось проверить подписку. Попробуйте ещё раз.';
+      setError(errorMessage);
+    } finally {
+      setIsCheckingSubscription(false);
     }
   };
 
@@ -178,9 +187,17 @@ export default function GeneratePage() {
                 <button
                   type="button"
                   onClick={checkSubscription}
-                  className="px-5 py-2 text-xs sm:text-sm rounded-full bg-amber-400 text-slate-950 font-medium hover:bg-amber-300 transition-colors cursor-pointer order-2"
+                  disabled={isCheckingSubscription}
+                  className="px-5 py-2 text-xs sm:text-sm rounded-full bg-amber-400 text-slate-950 font-medium hover:bg-amber-300 disabled:bg-amber-400/50 disabled:cursor-not-allowed transition-colors cursor-pointer order-2 flex items-center gap-2"
                 >
-                  Проверить подписку
+                  {isCheckingSubscription ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                      Проверка...
+                    </>
+                  ) : (
+                    'Проверить подписку'
+                  )}
                 </button>
               </div>
             </div>

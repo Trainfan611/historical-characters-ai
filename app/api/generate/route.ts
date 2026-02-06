@@ -5,6 +5,8 @@ import { prisma } from '@/lib/db';
 import { searchHistoricalPerson } from '@/lib/ai/perplexity';
 import { generateImagePrompt } from '@/lib/ai/openai';
 import { generateImage } from '@/lib/ai/openrouter';
+import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit-simple';
+import { generateImageSchema } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,7 +60,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    // Rate limiting по IP (дополнительно к лимиту по пользователю)
+    const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+    const ipRateLimit = rateLimit(`ip:${ip}`, {
+      maxRequests: 20, // Максимум 20 генераций в день с одного IP
+      windowMs: 24 * 60 * 60 * 1000,
+    });
+    
+    if (!ipRateLimit.allowed) {
+      return NextResponse.json(
+        { 
+          error: 'IP rate limit exceeded',
+          retryAfter: Math.round((ipRateLimit.resetAt - Date.now()) / 1000),
+        },
+        { 
+          status: 429,
+          headers: {
+            'X-RateLimit-Remaining': ipRateLimit.remaining.toString(),
+            'Retry-After': Math.round((ipRateLimit.resetAt - Date.now()) / 1000).toString(),
+          },
+        }
+      );
+    }
+
+    // Валидация входных данных
+    let body;
+    try {
+      body = await request.json();
+      const validated = generateImageSchema.parse(body);
+      body = validated;
+    } catch (error: any) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid input data',
+          details: error.errors || error.message,
+        },
+        { status: 400 }
+      );
+    }
+
     const { personName, personId, style = 'realistic' } = body;
 
     if (!personName && !personId) {

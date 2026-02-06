@@ -61,7 +61,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting по IP (дополнительно к лимиту по пользователю)
-    const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+    // Получаем IP из заголовков (Next.js 15 не имеет request.ip)
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const realIp = request.headers.get('x-real-ip');
+    const ip = forwardedFor?.split(',')[0]?.trim() || realIp || 'unknown';
+    
     const ipRateLimit = rateLimit(`ip:${ip}`, {
       maxRequests: 20, // Максимум 20 генераций в день с одного IP
       windowMs: 24 * 60 * 60 * 1000,

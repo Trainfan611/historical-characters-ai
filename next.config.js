@@ -4,8 +4,7 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   
-  // Оптимизация билда
-  swcMinify: true,
+  // Оптимизация билда (swcMinify включён по умолчанию в Next.js 15)
   productionBrowserSourceMaps: false, // Ускоряет билд
   
   images: {

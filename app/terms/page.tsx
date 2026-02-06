@@ -81,10 +81,10 @@ export default function TermsPage() {
             
             <div className="mt-8 pt-6 border-t border-slate-800">
               <Link 
-                href="/login"
+                href="/"
                 className="text-xs text-slate-400 hover:text-sky-300 transition-colors"
               >
-                ← Вернуться к входу
+                ← Вернуться на главную
               </Link>
             </div>
           </div>

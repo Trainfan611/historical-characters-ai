@@ -20,14 +20,27 @@ export default function GeneratePage() {
     isSubscribed: boolean;
     needsRecheck: boolean;
   } | null>(null);
+  const [channelLink, setChannelLink] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
       checkSubscription();
+      fetchChannelLink();
     }
   }, [status, router]);
+
+  const fetchChannelLink = async () => {
+    try {
+      const response = await axios.get('/api/subscription/channel');
+      if (response.data.channelLink) {
+        setChannelLink(response.data.channelLink);
+      }
+    } catch (error) {
+      console.error('Error fetching channel link:', error);
+    }
+  };
 
   const checkSubscription = async () => {
     try {
@@ -147,13 +160,25 @@ export default function GeneratePage() {
               <p className="text-amber-100 text-sm">
                 Для генерации изображений необходимо подписаться на наш Telegram канал
               </p>
-              <button
-                type="button"
-                onClick={checkSubscription}
-                className="px-5 py-2 text-xs sm:text-sm rounded-full bg-amber-400 text-slate-950 font-medium hover:bg-amber-300 transition-colors cursor-pointer"
-              >
-                Проверить подписку
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3 items-center">
+                {channelLink && (
+                  <a
+                    href={channelLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-5 py-2 text-xs sm:text-sm rounded-full bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors cursor-pointer"
+                  >
+                    Подписаться на канал
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={checkSubscription}
+                  className="px-5 py-2 text-xs sm:text-sm rounded-full bg-amber-400 text-slate-950 font-medium hover:bg-amber-300 transition-colors cursor-pointer"
+                >
+                  Проверить подписку
+                </button>
+              </div>
             </div>
           </div>
         )}

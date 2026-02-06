@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { ImageCarousel } from '@/components/carousel/ImageCarousel';
 
 const popularPersons = [
   'Наполеон Бонапарт',
@@ -47,6 +48,11 @@ export default function Home() {
                 Введите любого исторического персонажа и посмотрите, как его
                 «увидит» искусственный интеллект.
               </p>
+            </div>
+
+            {/* Карусель с изображениями */}
+            <div className="w-full max-w-4xl mx-auto">
+              <ImageCarousel />
             </div>
 
             <div className="pt-6 border-t border-slate-800">

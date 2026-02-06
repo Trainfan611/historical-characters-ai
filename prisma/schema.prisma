@@ -15,6 +15,7 @@ model User {
   lastName      String?
   photoUrl      String?
   isSubscribed  Boolean   @default(false)
+  isAdmin       Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
@@ -24,6 +25,7 @@ model User {
   @@index([telegramId])
   @@index([telegramId, isSubscribed]) // Составной индекс для быстрой проверки подписки
   @@index([createdAt])
+  @@index([isAdmin])
 }
 
 model HistoricalPerson {

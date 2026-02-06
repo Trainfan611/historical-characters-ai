@@ -23,8 +23,14 @@ export default function LoginPage() {
             <TelegramLogin />
           </div>
 
-          <p className="text-sm text-gray-500 text-center mt-4">
-            Нажимая кнопку, вы соглашаетесь с условиями использования
+          <p className="text-xs text-slate-500 text-center mt-4">
+            Нажимая кнопку, вы соглашаетесь с{' '}
+            <Link 
+              href="/terms" 
+              className="text-sky-400 hover:text-sky-300 underline transition-colors"
+            >
+              условиями использования
+            </Link>
           </p>
         </div>
       </main>

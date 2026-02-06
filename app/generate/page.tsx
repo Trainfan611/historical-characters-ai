@@ -348,13 +348,59 @@ export default function GeneratePage() {
                   alt="Generated"
                   className="w-full rounded-xl border border-slate-800/80"
                 />
-                <a
-                  href={generatedImage}
-                  download
-                  className="inline-flex items-center justify-center px-6 py-2 text-sm rounded-full bg-sky-400 text-slate-950 font-semibold hover:bg-sky-300 transition-colors"
-                >
-                  Скачать изображение
-                </a>
+                <div className="flex gap-3">
+                  <a
+                    href={generatedImage}
+                    download
+                    className="flex-1 inline-flex items-center justify-center px-6 py-2 text-sm rounded-full bg-sky-400 text-slate-950 font-semibold hover:bg-sky-300 transition-colors"
+                  >
+                    Скачать изображение
+                  </a>
+                  <button
+                    onClick={async () => {
+                      try {
+                        // Пробуем использовать Web Share API
+                        if (navigator.share && navigator.canShare) {
+                          // Для шаринга изображения нужно сначала получить файл
+                          const response = await fetch(generatedImage);
+                          const blob = await response.blob();
+                          const file = new File([blob], 'historical-character.png', { type: 'image/png' });
+                          
+                          if (navigator.canShare({ files: [file] })) {
+                            await navigator.share({
+                              files: [file],
+                              title: `Историческая личность: ${personName || 'Генерация'}`,
+                              text: 'Посмотрите, как выглядела эта историческая личность!',
+                            });
+                            setError(null);
+                            return;
+                          }
+                        }
+                        
+                        // Fallback: копируем ссылку в буфер обмена
+                        await navigator.clipboard.writeText(generatedImage);
+                        setError('Ссылка на изображение скопирована в буфер обмена!');
+                        setTimeout(() => setError(null), 3000);
+                      } catch (error: any) {
+                        if (error.name !== 'AbortError') {
+                          console.error('Error sharing:', error);
+                          // Пробуем скопировать ссылку
+                          try {
+                            await navigator.clipboard.writeText(generatedImage);
+                            setError('Ссылка на изображение скопирована в буфер обмена!');
+                            setTimeout(() => setError(null), 3000);
+                          } catch (clipboardError) {
+                            setError('Не удалось поделиться изображением');
+                            setTimeout(() => setError(null), 3000);
+                          }
+                        }
+                      }
+                    }}
+                    className="flex-1 inline-flex items-center justify-center px-6 py-2 text-sm rounded-full bg-emerald-500 text-white font-semibold hover:bg-emerald-400 transition-colors"
+                  >
+                    Поделиться
+                  </button>
+                </div>
               </div>
             </div>
           )}

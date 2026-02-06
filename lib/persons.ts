@@ -34,14 +34,47 @@ export async function findOrCreatePerson(
   } else {
     // Если не нашли, ищем через Perplexity (интернет)
     console.log(`[Persons] Searching for "${personName}" via Perplexity...`);
-    personInfo = await searchHistoricalPerson(personName);
     
-    if (!personInfo) {
-      console.error(`[Persons] Failed to find information about "${personName}"`);
-      throw new Error(`Не удалось найти информацию о "${personName}" в интернете`);
+    // Пробуем несколько вариантов поиска
+    let searchVariants = [personName];
+    
+    // Если имя короткое (1-2 слова), пробуем добавить контекст
+    const nameParts = personName.trim().split(/\s+/);
+    if (nameParts.length === 1) {
+      // Если только одно слово, пробуем с разными вариантами
+      searchVariants = [
+        personName,
+        `${personName} историческая личность`,
+        `${personName} политик`,
+        `${personName} лидер`,
+      ];
     }
     
-    console.log(`[Persons] Found information about "${personInfo.name}" from era: ${personInfo.era}`);
+    personInfo = null;
+    let lastError: Error | null = null;
+    
+    // Пробуем каждый вариант поиска
+    for (const searchVariant of searchVariants) {
+      try {
+        console.log(`[Persons] Trying search variant: "${searchVariant}"`);
+        personInfo = await searchHistoricalPerson(searchVariant);
+        
+        if (personInfo) {
+          console.log(`[Persons] Found information about "${personInfo.name}" from era: ${personInfo.era}`);
+          break; // Успешно нашли, выходим из цикла
+        }
+      } catch (error: any) {
+        console.error(`[Persons] Error searching with variant "${searchVariant}":`, error.message);
+        lastError = error;
+        // Продолжаем пробовать другие варианты
+      }
+    }
+    
+    if (!personInfo) {
+      const errorMessage = lastError?.message || `Не удалось найти информацию о "${personName}" в интернете`;
+      console.error(`[Persons] Failed to find information about "${personName}" after trying ${searchVariants.length} variants`);
+      throw new Error(errorMessage);
+    }
 
     // Сохраняем найденную личность в БД для кэширования
     person = await prisma.historicalPerson.create({

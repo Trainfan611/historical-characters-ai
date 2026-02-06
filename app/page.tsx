@@ -19,6 +19,11 @@ export default function Home() {
         {/* Центрированный блок как на BookVision */}
         <section className="w-full flex-1 flex items-center justify-center px-4 py-10">
           <div className="w-full max-w-xl text-center space-y-8">
+            {/* Карусель с изображениями */}
+            <div className="w-full max-w-4xl mx-auto -mt-4">
+              <ImageCarousel />
+            </div>
+
             <div className="flex items-center justify-center gap-2 text-sm text-sky-300">
               <span className="text-lg">✦</span>
               <span className="uppercase tracking-[0.2em] text-xs text-sky-200/80">
@@ -48,11 +53,6 @@ export default function Home() {
                 Введите любого исторического персонажа и посмотрите, как его
                 «увидит» искусственный интеллект.
               </p>
-            </div>
-
-            {/* Карусель с изображениями */}
-            <div className="w-full max-w-4xl mx-auto">
-              <ImageCarousel />
             </div>
 
             <div className="pt-6 border-t border-slate-800">

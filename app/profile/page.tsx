@@ -100,7 +100,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-2">Подписка</h2>
+            <h2 className="text-lg font-semibold mb-2">Подписка free</h2>
             <p className={`font-semibold ${subscriptionStatus?.isSubscribed ? 'text-green-600' : 'text-red-600'}`}>
               {subscriptionStatus?.isSubscribed ? 'Активна' : 'Не активна'}
             </p>

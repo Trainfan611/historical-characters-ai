@@ -283,7 +283,7 @@ export default function GeneratePage() {
               className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/70 focus:border-transparent"
             />
             <p className="mt-2 text-xs text-slate-500">
-              💡 Можете ввести любое имя исторической личности - система найдет информацию в интернете
+              💡 Можете ввести любое имя исторической личности - система вам его сгенерирует
             </p>
 
             {isSearching && (

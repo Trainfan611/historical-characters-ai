@@ -91,19 +91,20 @@ export function ImageCarousel() {
   const duplicatedImages = [...images, ...images, ...images]; // Для бесшовной прокрутки
 
   return (
-    <div className="relative w-full overflow-hidden mt-8 max-w-md mx-auto">
-      <div className="relative h-32 sm:h-40">
+    <div className="relative w-full overflow-hidden mt-8 max-w-4xl mx-auto">
+      <div className="relative" style={{ aspectRatio: '16/9', height: 'auto' }}>
         <div
           className="flex transition-transform duration-1000 ease-in-out h-full"
           style={{
             transform: `translateX(-${currentIndex * (100 / visibleCount)}%)`,
             width: `${(duplicatedImages.length / visibleCount) * 100}%`,
+            height: '100%',
           }}
         >
           {duplicatedImages.map((image, index) => (
             <div
               key={`${image.id}-${index}`}
-              className="flex-shrink-0 px-1.5"
+              className="flex-shrink-0 px-1.5 h-full"
               style={{ width: `${100 / visibleCount}%` }}
             >
               <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-800/80 bg-slate-900/60 shadow-md">
@@ -111,12 +112,12 @@ export function ImageCarousel() {
                   src={image.url}
                   alt={image.alt}
                   fill
-                  className="object-cover"
+                  className="object-cover w-full h-full"
                   sizes="(max-width: 768px) 100vw, 33vw"
                   unoptimized // Для внешних URL может потребоваться
                 />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/90 to-transparent p-1.5">
-                  <p className="text-[10px] text-slate-200 font-medium truncate">
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/90 to-transparent p-2">
+                  <p className="text-xs text-slate-200 font-medium truncate">
                     {image.alt}
                   </p>
                 </div>

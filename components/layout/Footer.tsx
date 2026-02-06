@@ -3,7 +3,7 @@ export function Footer() {
     <footer className="mt-auto border-t border-slate-800 bg-slate-950/90">
       <div className="container mx-auto px-4 py-6">
         <div className="text-center text-slate-500 text-xs space-y-1">
-          <p>© 2024 Historical Characters. Генерация изображений исторических личностей с помощью AI.</p>
+          <p>© 2026 Historical Characters. Генерация изображений исторических личностей с помощью AI.</p>
           <p className="text-[11px] text-slate-600">
             Вдохновлено лаконичным интерфейсом Book Vision, адаптировано для героев реальной истории.
           </p>

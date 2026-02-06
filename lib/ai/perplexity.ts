@@ -241,7 +241,7 @@ function parsePersonInfo(name: string, content: string): PersonInfo {
   const yearMatches = content.match(yearPattern);
   
   if (yearMatches && yearMatches.length > 0) {
-    const years = yearMatches.map(Number).filter((y) => y >= 1000 && y <= 2024);
+    const years = yearMatches.map(Number).filter((y) => y >= 1000 && y <= 2026);
     
     if (years.length >= 2) {
       // Сортируем и берем минимальный как год рождения, максимальный как смерти

@@ -29,14 +29,19 @@ async function generateWithReplicate(prompt: string): Promise<string> {
   }
 
   try {
-    // Создаем prediction
+    console.log('[Replicate] Starting image generation with prompt:', prompt.substring(0, 100));
+    
+    // Используем правильный формат для Replicate API
+    // Model: black-forest-labs/flux-1.1-pro или flux-dev
     const createResponse = await axios.post(
       REPLICATE_API_URL,
       {
-        version: 'black-forest-labs/flux-1.1-pro', // или другой version ID
+        version: 'black-forest-labs/flux-1.1-pro', // или 'black-forest-labs/flux-dev' для быстрой генерации
         input: {
           prompt: prompt,
           num_outputs: 1,
+          aspect_ratio: '1:1',
+          output_format: 'png',
         },
       },
       {
@@ -48,11 +53,16 @@ async function generateWithReplicate(prompt: string): Promise<string> {
     );
 
     const predictionId = createResponse.data.id;
+    console.log('[Replicate] Prediction created:', predictionId);
+    
     let prediction = createResponse.data;
+    let attempts = 0;
+    const maxAttempts = 120; // Максимум 2 минуты ожидания
 
     // Ждем завершения генерации
-    while (prediction.status === 'starting' || prediction.status === 'processing') {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    while ((prediction.status === 'starting' || prediction.status === 'processing') && attempts < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // Проверяем каждые 2 секунды
+      attempts++;
       
       const statusResponse = await axios.get(
         `${REPLICATE_API_URL}/${predictionId}`,
@@ -64,18 +74,31 @@ async function generateWithReplicate(prompt: string): Promise<string> {
       );
       
       prediction = statusResponse.data;
+      console.log(`[Replicate] Status check ${attempts}:`, prediction.status);
     }
 
-    if (prediction.status === 'succeeded' && prediction.output?.[0]) {
-      const imageUrl = prediction.output[0];
-      // Скачиваем и сохраняем изображение локально
-      return await downloadAndSaveImage(imageUrl);
+    if (prediction.status === 'succeeded') {
+      const imageUrl = Array.isArray(prediction.output) 
+        ? prediction.output[0] 
+        : prediction.output;
+      
+      if (imageUrl) {
+        console.log('[Replicate] Generation succeeded, image URL:', imageUrl);
+        // Возвращаем URL напрямую, не скачиваем локально (для Railway это лучше)
+        return imageUrl;
+      }
     }
 
-    throw new Error('Generation failed: ' + prediction.error);
+    const errorMsg = prediction.error || `Generation failed with status: ${prediction.status}`;
+    console.error('[Replicate] Generation failed:', errorMsg);
+    throw new Error(errorMsg);
   } catch (error: any) {
-    console.error('Error generating with Replicate:', error);
-    throw error;
+    console.error('[Replicate] Error generating image:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+    throw new Error(`Failed to generate image: ${error.message}`);
   }
 }
 

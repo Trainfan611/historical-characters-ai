@@ -33,11 +33,15 @@ export async function findOrCreatePerson(
     };
   } else {
     // Если не нашли, ищем через Perplexity (интернет)
+    console.log(`[Persons] Searching for "${personName}" via Perplexity...`);
     personInfo = await searchHistoricalPerson(personName);
     
     if (!personInfo) {
+      console.error(`[Persons] Failed to find information about "${personName}"`);
       throw new Error(`Не удалось найти информацию о "${personName}" в интернете`);
     }
+    
+    console.log(`[Persons] Found information about "${personInfo.name}" from era: ${personInfo.era}`);
 
     // Сохраняем найденную личность в БД для кэширования
     person = await prisma.historicalPerson.create({

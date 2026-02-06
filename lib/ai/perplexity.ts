@@ -19,10 +19,12 @@ export interface PersonInfo {
  */
 export async function searchHistoricalPerson(personName: string): Promise<PersonInfo | null> {
   if (!PERPLEXITY_API_KEY) {
+    console.error('[Perplexity] PERPLEXITY_API_KEY is not set');
     throw new Error('PERPLEXITY_API_KEY is not set');
   }
 
   try {
+    console.log(`[Perplexity] Searching for: "${personName}"`);
     const prompt = `Provide detailed information about the historical person "${personName}". 
     Be specific and accurate. Include: 
     1. Full name and any alternative names
@@ -65,13 +67,22 @@ export async function searchHistoricalPerson(personName: string): Promise<Person
 
     const content = response.data.choices[0]?.message?.content;
     if (!content) {
+      console.error('[Perplexity] No content in response');
       return null;
     }
 
+    console.log(`[Perplexity] Received response (${content.length} chars)`);
+    
     // Парсинг ответа и извлечение информации
-    return parsePersonInfo(personName, content);
-  } catch (error) {
-    console.error('Error searching historical person:', error);
+    const personInfo = parsePersonInfo(personName, content);
+    console.log(`[Perplexity] Parsed person info:`, { name: personInfo.name, era: personInfo.era });
+    return personInfo;
+  } catch (error: any) {
+    console.error('[Perplexity] Error searching historical person:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
     return null;
   }
 }

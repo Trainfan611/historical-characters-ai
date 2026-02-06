@@ -62,10 +62,13 @@ export async function POST(request: NextRequest) {
     try {
       // Эта функция автоматически ищет в БД, а если не находит - ищет через интернет (Perplexity)
       // и сохраняет найденную личность в БД для кэширования
+      console.log('[Generate] Searching for person:', searchName);
       const result = await findOrCreatePerson(searchName);
       historicalPerson = result.person;
       personInfo = result.personInfo;
+      console.log('[Generate] Person found:', personInfo.name);
     } catch (error: any) {
+      console.error('[Generate] Error finding person:', error);
       return NextResponse.json(
         { 
           error: error.message || 'Failed to find information about this person',
@@ -76,10 +79,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Генерация промпта
-    const prompt = await generateImagePrompt(personInfo, style);
+    console.log('[Generate] Generating image prompt...');
+    let prompt: string;
+    try {
+      prompt = await generateImagePrompt(personInfo, style);
+      console.log('[Generate] Prompt generated:', prompt.substring(0, 100));
+    } catch (error: any) {
+      console.error('[Generate] Error generating prompt:', error);
+      return NextResponse.json(
+        { 
+          error: 'Failed to generate image prompt',
+          details: error.message
+        },
+        { status: 500 }
+      );
+    }
 
     // Генерация изображения
-    const imageUrl = await generateImage(prompt);
+    console.log('[Generate] Generating image...');
+    let imageUrl: string;
+    try {
+      imageUrl = await generateImage(prompt);
+      console.log('[Generate] Image generated:', imageUrl);
+    } catch (error: any) {
+      console.error('[Generate] Error generating image:', error);
+      return NextResponse.json(
+        { 
+          error: 'Failed to generate image',
+          details: error.message
+        },
+        { status: 500 }
+      );
+    }
 
     // Сохранение в БД
     const generation = await prisma.generation.create({

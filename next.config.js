@@ -4,6 +4,10 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   
+  // Оптимизация билда
+  swcMinify: true,
+  productionBrowserSourceMaps: false, // Ускоряет билд
+  
   images: {
     domains: ['localhost'],
     remotePatterns: [

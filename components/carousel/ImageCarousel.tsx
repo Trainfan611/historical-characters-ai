@@ -92,13 +92,15 @@ export function ImageCarousel() {
 
   return (
     <div className="relative w-full overflow-hidden mt-8 max-w-4xl mx-auto">
-      <div className="relative" style={{ aspectRatio: '16/9', height: 'auto' }}>
+      <div 
+        className="relative w-full"
+        style={{ aspectRatio: '16/9' }}
+      >
         <div
-          className="flex transition-transform duration-1000 ease-in-out h-full"
+          className="flex transition-transform duration-1000 ease-in-out absolute inset-0"
           style={{
             transform: `translateX(-${currentIndex * (100 / visibleCount)}%)`,
             width: `${(duplicatedImages.length / visibleCount) * 100}%`,
-            height: '100%',
           }}
         >
           {duplicatedImages.map((image, index) => (
@@ -107,15 +109,19 @@ export function ImageCarousel() {
               className="flex-shrink-0 px-1.5 h-full"
               style={{ width: `${100 / visibleCount}%` }}
             >
-              <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-800/80 bg-slate-900/60 shadow-md" style={{ aspectRatio: '16/9' }}>
+              <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-800/80 bg-slate-900/60 shadow-md">
                 <Image
                   src={image.url}
                   alt={image.alt}
                   fill
-                  className="object-cover"
-                  style={{ objectPosition: 'center' }}
+                  className="!object-cover !object-center"
+                  style={{ 
+                    objectFit: 'cover',
+                    objectPosition: 'center',
+                  }}
                   sizes="(max-width: 768px) 100vw, 33vw"
-                  unoptimized // Для внешних URL может потребоваться
+                  unoptimized
+                  priority={index < visibleCount}
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/90 to-transparent p-2">
                   <p className="text-xs text-slate-200 font-medium truncate">

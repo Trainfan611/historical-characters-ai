@@ -44,67 +44,95 @@ export async function searchHistoricalPerson(personName: string): Promise<Person
     Format your response as a detailed, structured description suitable for AI image generation.
     Be specific about appearance, clothing, and historical context.`;
 
-    const response = await axios.post(
-      PERPLEXITY_API_URL,
-      {
-        model: 'llama-3.1-sonar-large-128k-online',
-        messages: [
+    // Пробуем несколько актуальных моделей Perplexity
+    const models = [
+      'llama-3.1-sonar-huge-128k-online',
+      'llama-3.1-sonar-small-128k-online',
+      'sonar',
+      'llama-3.1-70b-instruct',
+    ];
+
+    let lastError: any = null;
+    
+    for (const model of models) {
+      try {
+        console.log(`[Perplexity] Trying model: ${model}`);
+        
+        const response = await axios.post(
+          PERPLEXITY_API_URL,
           {
-            role: 'system',
-            content: 'You are a helpful assistant that provides detailed information about historical figures, politicians, leaders, and notable people for AI image generation. Always try to find information about the person, even if the name is incomplete or in a different language.',
+            model: model,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a helpful assistant that provides detailed information about historical figures, politicians, leaders, and notable people for AI image generation. Always try to find information about the person, even if the name is incomplete or in a different language.',
+              },
+              {
+                role: 'user',
+                content: prompt,
+              },
+            ],
+            temperature: 0.7,
+            max_tokens: 1000,
           },
           {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 1000, // Увеличиваем для более детальной информации
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        timeout: 30000, // 30 секунд таймаут
+            headers: {
+              Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 30000,
+          }
+        );
+
+        console.log('[Perplexity] Response status:', response.status);
+        console.log('[Perplexity] Response data structure:', {
+          hasChoices: !!response.data.choices,
+          choicesLength: response.data.choices?.length,
+        });
+
+        const content = response.data.choices?.[0]?.message?.content;
+        if (!content) {
+          console.error('[Perplexity] No content in response. Full response:', JSON.stringify(response.data, null, 2));
+          continue; // Пробуем следующую модель
+        }
+
+        console.log(`[Perplexity] Received response (${content.length} chars) from model: ${model}`);
+        console.log('[Perplexity] Response preview:', content.substring(0, 200));
+        
+        // Проверяем, не говорит ли ответ, что персона не найдена
+        const lowerContent = content.toLowerCase();
+        if (lowerContent.includes('not found') || 
+            lowerContent.includes('not a real') || 
+            lowerContent.includes('cannot find') ||
+            lowerContent.includes('no information') ||
+            (lowerContent.includes('not') && lowerContent.includes('historical figure'))) {
+          console.warn('[Perplexity] Response indicates person not found');
+          continue; // Пробуем следующую модель
+        }
+        
+        // Парсинг ответа и извлечение информации
+        const personInfo = parsePersonInfo(personName, content);
+        console.log(`[Perplexity] Parsed person info:`, { 
+          name: personInfo.name, 
+          era: personInfo.era,
+          hasDescription: !!personInfo.description,
+          descriptionLength: personInfo.description.length,
+        });
+        return personInfo;
+      } catch (error: any) {
+        console.warn(`[Perplexity] Model ${model} failed:`, {
+          message: error.message,
+          status: error.response?.status,
+          errorType: error.response?.data?.error?.type,
+        });
+        lastError = error;
+        // Продолжаем пробовать следующую модель
+        continue;
       }
-    );
-
-    console.log('[Perplexity] Response status:', response.status);
-    console.log('[Perplexity] Response data structure:', {
-      hasChoices: !!response.data.choices,
-      choicesLength: response.data.choices?.length,
-    });
-
-    const content = response.data.choices?.[0]?.message?.content;
-    if (!content) {
-      console.error('[Perplexity] No content in response. Full response:', JSON.stringify(response.data, null, 2));
-      return null;
-    }
-
-    console.log(`[Perplexity] Received response (${content.length} chars)`);
-    console.log('[Perplexity] Response preview:', content.substring(0, 200));
-    
-    // Проверяем, не говорит ли ответ, что персона не найдена
-    const lowerContent = content.toLowerCase();
-    if (lowerContent.includes('not found') || 
-        lowerContent.includes('not a real') || 
-        lowerContent.includes('cannot find') ||
-        lowerContent.includes('no information') ||
-        (lowerContent.includes('not') && lowerContent.includes('historical figure'))) {
-      console.warn('[Perplexity] Response indicates person not found');
-      return null;
     }
     
-    // Парсинг ответа и извлечение информации
-    const personInfo = parsePersonInfo(personName, content);
-    console.log(`[Perplexity] Parsed person info:`, { 
-      name: personInfo.name, 
-      era: personInfo.era,
-      hasDescription: !!personInfo.description,
-      descriptionLength: personInfo.description.length,
-    });
-    return personInfo;
+    // Если все модели не сработали
+    throw lastError || new Error('All Perplexity models failed');
   } catch (error: any) {
     console.error('[Perplexity] Error searching historical person:', {
       message: error.message,

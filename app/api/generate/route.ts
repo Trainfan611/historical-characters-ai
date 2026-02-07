@@ -177,14 +177,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Генерация промпта
-    console.log('[Generate] Generating image prompt...');
+    console.log('[Generate] ===== Starting prompt generation =====');
     let prompt: string;
     try {
       prompt = await generateImagePrompt(personInfo, style);
-      console.log('[Generate] Prompt generated successfully, length:', prompt.length);
+      console.log('[Generate] ✓ Prompt generated successfully, length:', prompt.length);
       console.log('[Generate] Prompt preview:', prompt.substring(0, 100));
     } catch (error: any) {
-      console.error('[Generate] Error generating prompt (should not happen due to fallback):', error);
+      console.error('[Generate] ✗ CRITICAL: Error generating prompt (fallback should have worked):', error);
       // Fallback уже должен был сработать в generateImagePrompt, но на всякий случай
       return NextResponse.json(
         { 
@@ -197,29 +197,48 @@ export async function POST(request: NextRequest) {
 
     // Генерация изображения
     // Используем Nano Banana для генерации изображений
-    console.log('[Generate] Generating image using Nano Banana...');
+    console.log('[Generate] ===== Starting image generation =====');
+    console.log('[Generate] Attempting to generate image using Nano Banana...');
     let imageUrl: string;
     let imageSource = 'unknown';
     try {
       imageUrl = await generateImageWithNanoBanana(prompt);
       imageSource = 'Nano Banana';
-      console.log('[Generate] Image generated with Nano Banana:', imageUrl);
+      console.log('[Generate] ✓ Image generated successfully with Nano Banana');
+      console.log('[Generate] Image URL:', imageUrl);
     } catch (error: any) {
-      console.error('[Generate] Error generating image with Nano Banana:', {
+      console.error('[Generate] ✗ Nano Banana failed with error:', {
         message: error.message,
         status: error.response?.status,
+        code: error.code,
       });
       
       // Fallback: если Nano Banana не сработал, пробуем Replicate
-      console.log('[Generate] Nano Banana failed, falling back to Replicate...');
+      console.log('[Generate] ===== Attempting fallback to Replicate =====');
+      console.log('[Generate] Checking if REPLICATE_API_KEY is available...');
+      
+      if (!process.env.REPLICATE_API_KEY) {
+        console.error('[Generate] ✗ REPLICATE_API_KEY is not set! Cannot use fallback.');
+        return NextResponse.json(
+          { 
+            error: 'Failed to generate image',
+            details: `Nano Banana failed: ${error.message}. Replicate fallback unavailable: REPLICATE_API_KEY not set.`
+          },
+          { status: 500 }
+        );
+      }
+      
+      console.log('[Generate] REPLICATE_API_KEY found, attempting Replicate generation...');
       try {
         imageUrl = await generateImage(prompt);
         imageSource = 'Replicate (fallback)';
-        console.log('[Generate] Fallback to Replicate successful, image URL:', imageUrl);
+        console.log('[Generate] ✓ Fallback to Replicate successful!');
+        console.log('[Generate] Image URL:', imageUrl);
       } catch (fallbackError: any) {
-        console.error('[Generate] Fallback to Replicate also failed:', {
+        console.error('[Generate] ✗ Fallback to Replicate also failed:', {
           message: fallbackError.message,
           status: fallbackError.response?.status,
+          code: fallbackError.code,
         });
         return NextResponse.json(
           { 
@@ -231,7 +250,7 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    console.log(`[Generate] Image generation completed using ${imageSource}`);
+    console.log(`[Generate] ===== Image generation completed using ${imageSource} =====`);
 
     // Сохранение в БД
     // Используем полное имя с дополнительной информацией для сохранения

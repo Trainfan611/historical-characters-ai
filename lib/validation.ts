@@ -22,12 +22,12 @@ function cleanPersonName(name: string): string {
  */
 export const generateImageSchema = z.object({
   personName: z.string()
+    .trim()
     .min(2, 'Имя должно быть не менее 2 символов')
     .max(200, 'Имя слишком длинное')
     .transform((val) => cleanPersonName(val)) // Очищаем от markdown перед валидацией
     .refine((val) => val.length >= 2, 'Имя должно быть не менее 2 символов после очистки')
-    .refine((val) => /^[a-zA-Zа-яА-ЯёЁ\s\-'.,()]+$/.test(val), 'Недопустимые символы в имени')
-    .trim(),
+    .refine((val) => /^[a-zA-Zа-яА-ЯёЁ\s\-'.,()]+$/.test(val), 'Недопустимые символы в имени'),
   personId: z.string().optional(),
   style: z.enum(['realistic', 'artistic', 'historical']).optional().default('realistic'),
 });

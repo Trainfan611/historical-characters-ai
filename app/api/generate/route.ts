@@ -113,13 +113,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Убеждаемся, что personName - это строка
+    const personNameStr = typeof personName === 'string' ? personName : null;
+
     // Извлекаем только имя и фамилию для поиска в БД (убирая дополнительную информацию в скобках)
     // Например: "Уинстон Черчилль (премьер-министр)" -> "Уинстон Черчилль"
-    const cleanPersonName = personName ? extractPersonName(personName) : null;
+    const cleanPersonName = personNameStr ? extractPersonName(personNameStr) : null;
     
     // Сохраняем полное имя с дополнительной информацией для генерации
-    const fullPersonName = personName ? getFullNameForGeneration(personName) : null;
-    const additionalInfo = personName ? extractAdditionalInfo(personName) : null;
+    const fullPersonName = personNameStr ? getFullNameForGeneration(personNameStr) : null;
+    const additionalInfo = personNameStr ? extractAdditionalInfo(personNameStr) : null;
 
     // Поиск или получение информации о личности
     // Используем улучшенную функцию поиска/создания через интернет

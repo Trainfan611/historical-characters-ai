@@ -179,8 +179,13 @@ async function tryBananaDevFormat(apiKey: string, prompt: string): Promise<strin
 
     return extractImageUrl(response.data);
   } catch (error: any) {
-    console.error('[Nano Banana] Banana.dev format also failed:', error.message);
-    throw new Error(`All API formats failed. Last error: ${error.message}`);
+    console.error('[Nano Banana] Banana.dev format also failed:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+    });
+    // Пробрасываем ошибку дальше для fallback на Replicate
+    throw new Error(`All Nano Banana API formats failed. Last error: ${error.message}`);
   }
 }
 

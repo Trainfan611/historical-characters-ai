@@ -117,12 +117,12 @@ The prompt should be in English and suitable for AI image generation models like
 
       // Если ошибка 403 (API не включен) или 401 (неверный ключ), пробуем fallback на OpenAI
       if (error.response?.status === 403 || error.response?.status === 401) {
-        console.log('[Gemini] API not enabled or invalid key, falling back to OpenAI...');
+        console.log('[Gemini] API not enabled or invalid key (status:', error.response?.status, '), falling back to OpenAI...');
         return await generateImagePromptWithOpenAI(personInfo, style);
       }
 
       // Для других ошибок тоже пробуем OpenAI
-      console.log('[Gemini] Falling back to OpenAI due to error...');
+      console.log('[Gemini] Error occurred (status:', error.response?.status || 'unknown', '), falling back to OpenAI...');
       return await generateImagePromptWithOpenAI(personInfo, style);
     }
   }

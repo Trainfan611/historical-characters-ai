@@ -181,9 +181,11 @@ export async function POST(request: NextRequest) {
     let prompt: string;
     try {
       prompt = await generateImagePrompt(personInfo, style);
-      console.log('[Generate] Prompt generated:', prompt.substring(0, 100));
+      console.log('[Generate] Prompt generated successfully, length:', prompt.length);
+      console.log('[Generate] Prompt preview:', prompt.substring(0, 100));
     } catch (error: any) {
-      console.error('[Generate] Error generating prompt:', error);
+      console.error('[Generate] Error generating prompt (should not happen due to fallback):', error);
+      // Fallback уже должен был сработать в generateImagePrompt, но на всякий случай
       return NextResponse.json(
         { 
           error: 'Failed to generate image prompt',
@@ -197,28 +199,39 @@ export async function POST(request: NextRequest) {
     // Используем Nano Banana для генерации изображений
     console.log('[Generate] Generating image using Nano Banana...');
     let imageUrl: string;
+    let imageSource = 'unknown';
     try {
       imageUrl = await generateImageWithNanoBanana(prompt);
+      imageSource = 'Nano Banana';
       console.log('[Generate] Image generated with Nano Banana:', imageUrl);
     } catch (error: any) {
-      console.error('[Generate] Error generating image with Nano Banana:', error);
+      console.error('[Generate] Error generating image with Nano Banana:', {
+        message: error.message,
+        status: error.response?.status,
+      });
       
       // Fallback: если Nano Banana не сработал, пробуем Replicate
       console.log('[Generate] Nano Banana failed, falling back to Replicate...');
       try {
         imageUrl = await generateImage(prompt);
-        console.log('[Generate] Fallback to Replicate successful');
+        imageSource = 'Replicate (fallback)';
+        console.log('[Generate] Fallback to Replicate successful, image URL:', imageUrl);
       } catch (fallbackError: any) {
-        console.error('[Generate] Fallback to Replicate also failed:', fallbackError);
+        console.error('[Generate] Fallback to Replicate also failed:', {
+          message: fallbackError.message,
+          status: fallbackError.response?.status,
+        });
         return NextResponse.json(
           { 
             error: 'Failed to generate image',
-            details: error.message
+            details: `Nano Banana failed: ${error.message}. Replicate fallback also failed: ${fallbackError.message}`
           },
           { status: 500 }
         );
       }
     }
+    
+    console.log(`[Generate] Image generation completed using ${imageSource}`);
 
     // Сохранение в БД
     // Используем полное имя с дополнительной информацией для сохранения

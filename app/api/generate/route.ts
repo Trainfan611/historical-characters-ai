@@ -9,7 +9,7 @@ import { generateImageWithOpenAI } from '@/lib/ai/openai-image';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit-simple';
 import { generateImageSchema } from '@/lib/validation';
 import { getUserSafe } from '@/lib/user-safe';
-import { extractPersonName } from '@/lib/person-name-utils';
+import { extractPersonName, extractAdditionalInfo, getFullNameForGeneration } from '@/lib/person-name-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -113,9 +113,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Извлекаем только имя и фамилию, убирая дополнительную информацию в скобках
+    // Извлекаем только имя и фамилию для поиска в БД (убирая дополнительную информацию в скобках)
     // Например: "Уинстон Черчилль (премьер-министр)" -> "Уинстон Черчилль"
     const cleanPersonName = personName ? extractPersonName(personName) : null;
+    
+    // Сохраняем полное имя с дополнительной информацией для генерации
+    const fullPersonName = personName ? getFullNameForGeneration(personName) : null;
+    const additionalInfo = personName ? extractAdditionalInfo(personName) : null;
 
     // Поиск или получение информации о личности
     // Используем улучшенную функцию поиска/создания через интернет
@@ -143,7 +147,20 @@ export async function POST(request: NextRequest) {
       const result = await findOrCreatePerson(searchName);
       historicalPerson = result.person;
       personInfo = result.personInfo;
+      
+      // Обновляем имя для генерации: используем полное имя с дополнительной информацией
+      if (fullPersonName && additionalInfo) {
+        personInfo.name = fullPersonName;
+        // Добавляем дополнительную информацию в описание, если её там нет
+        if (additionalInfo && !personInfo.description.toLowerCase().includes(additionalInfo.toLowerCase())) {
+          personInfo.description = `${personInfo.description} ${additionalInfo}.`.trim();
+        }
+      }
+      
       console.log('[Generate] Person found:', personInfo.name);
+      if (additionalInfo) {
+        console.log('[Generate] Additional info from brackets:', additionalInfo);
+      }
     } catch (error: any) {
       console.error('[Generate] Error finding person:', error);
       return NextResponse.json(
@@ -218,12 +235,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Сохранение в БД
-    // Используем очищенное имя для сохранения (без дополнительной информации в скобках)
+    // Используем полное имя с дополнительной информацией для сохранения
     const generation = await prisma.generation.create({
       data: {
         userId: dbUser.id,
         historicalPersonId: historicalPerson?.id,
-        personName: personInfo.name, // Используем имя из personInfo (уже очищенное)
+        personName: personInfo.name, // Используем полное имя из personInfo (с дополнительной информацией)
         prompt,
         imageUrl,
         style,

@@ -30,3 +30,30 @@ export function extractPersonName(fullName: string): string {
 export function hasAdditionalInfo(name: string): boolean {
   return /\([^)]+\)/.test(name);
 }
+
+/**
+ * Извлекает дополнительную информацию из скобок
+ * Примеры:
+ * - "Уинстон Черчилль (премьер-министр)" -> "премьер-министр"
+ * - "Николай II (второй)" -> "второй"
+ * - "Владимир Путин" -> null
+ */
+export function extractAdditionalInfo(fullName: string): string | null {
+  if (!fullName) return null;
+  
+  const match = fullName.match(/\(([^)]+)\)/);
+  return match ? match[1].trim() : null;
+}
+
+/**
+ * Получает полное имя с дополнительной информацией
+ * Используется для генерации промпта
+ */
+export function getFullNameForGeneration(fullName: string): string {
+  if (!fullName) return '';
+  
+  // Убираем только форматирование (звездочки), но оставляем скобки
+  let cleaned = fullName.replace(/\*\*/g, '').replace(/\*/g, '').trim();
+  
+  return cleaned;
+}

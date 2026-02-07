@@ -4,13 +4,29 @@
 import { z } from 'zod';
 
 /**
+ * Очищает имя от markdown форматирования и других служебных символов
+ */
+function cleanPersonName(name: string): string {
+  return name
+    .replace(/\*\*/g, '') // Убираем двойные звездочки (жирный текст)
+    .replace(/\*/g, '') // Убираем одинарные звездочки
+    .replace(/_/g, '') // Убираем подчеркивания (курсив)
+    .replace(/`/g, '') // Убираем обратные кавычки (код)
+    .replace(/\[|\]/g, '') // Убираем квадратные скобки
+    .replace(/#/g, '') // Убираем решетки
+    .trim();
+}
+
+/**
  * Схема валидации для генерации изображения
  */
 export const generateImageSchema = z.object({
   personName: z.string()
     .min(2, 'Имя должно быть не менее 2 символов')
     .max(200, 'Имя слишком длинное')
-    .regex(/^[a-zA-Zа-яА-ЯёЁ\s\-'.,()]+$/, 'Недопустимые символы в имени')
+    .transform((val) => cleanPersonName(val)) // Очищаем от markdown перед валидацией
+    .refine((val) => val.length >= 2, 'Имя должно быть не менее 2 символов после очистки')
+    .refine((val) => /^[a-zA-Zа-яА-ЯёЁ\s\-'.,()]+$/.test(val), 'Недопустимые символы в имени')
     .trim(),
   personId: z.string().optional(),
   style: z.enum(['realistic', 'artistic', 'historical']).optional().default('realistic'),

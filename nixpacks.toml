@@ -1,0 +1,18 @@
+# Nixpacks конфигурация для Railway
+# Ускоряет сборку за счёт кэширования
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "npm"]
+
+[phases.install]
+cmds = [
+  "npm ci --only=production --prefer-offline --no-audit"
+]
+
+[phases.build]
+cmds = [
+  "npm run build"
+]
+
+[start]
+cmd = "npm start"

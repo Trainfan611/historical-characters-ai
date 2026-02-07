@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:fast": "SKIP_ENV_VALIDATION=true next build",
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",
@@ -13,7 +14,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "admin:make": "tsx scripts/make-admin.ts",
-    "railway:setup": "node scripts/setup-railway.js"
+    "railway:setup": "node scripts/setup-railway.js",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

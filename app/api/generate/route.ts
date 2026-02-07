@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { searchHistoricalPerson } from '@/lib/ai/perplexity';
 import { generateImagePrompt } from '@/lib/ai/openai';
+import { generateImagePromptWithPerplexity } from '@/lib/ai/perplexity-prompt';
 import { generateImage } from '@/lib/ai/openrouter';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit-simple';
 import { generateImageSchema } from '@/lib/validation';
@@ -150,20 +151,48 @@ export async function POST(request: NextRequest) {
     }
 
     // Генерация промпта
-    console.log('[Generate] Generating image prompt...');
+    // Экспериментальная функция: используем Perplexity для промпта, если включен флаг
+    const usePerplexityForPrompt = process.env.USE_PERPLEXITY_FOR_PROMPT === 'true';
+    console.log(`[Generate] Generating image prompt using ${usePerplexityForPrompt ? 'Perplexity (experimental)' : 'OpenAI (default)'}...`);
     let prompt: string;
     try {
-      prompt = await generateImagePrompt(personInfo, style);
-      console.log('[Generate] Prompt generated:', prompt.substring(0, 100));
+      if (usePerplexityForPrompt) {
+        // Экспериментальная версия: используем Perplexity для генерации промпта
+        prompt = await generateImagePromptWithPerplexity(personInfo, style);
+        console.log('[Generate] Prompt generated with Perplexity:', prompt.substring(0, 100));
+      } else {
+        // Стандартная версия: используем OpenAI
+        prompt = await generateImagePrompt(personInfo, style);
+        console.log('[Generate] Prompt generated with OpenAI:', prompt.substring(0, 100));
+      }
     } catch (error: any) {
       console.error('[Generate] Error generating prompt:', error);
-      return NextResponse.json(
-        { 
-          error: 'Failed to generate image prompt',
-          details: error.message
-        },
-        { status: 500 }
-      );
+      
+      // Fallback: если Perplexity не сработал, пробуем OpenAI
+      if (usePerplexityForPrompt) {
+        console.log('[Generate] Perplexity failed, falling back to OpenAI...');
+        try {
+          prompt = await generateImagePrompt(personInfo, style);
+          console.log('[Generate] Fallback to OpenAI successful');
+        } catch (fallbackError: any) {
+          console.error('[Generate] Fallback to OpenAI also failed:', fallbackError);
+          return NextResponse.json(
+            { 
+              error: 'Failed to generate image prompt',
+              details: error.message
+            },
+            { status: 500 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { 
+            error: 'Failed to generate image prompt',
+            details: error.message
+          },
+          { status: 500 }
+        );
+      }
     }
 
     // Генерация изображения

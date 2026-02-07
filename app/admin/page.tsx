@@ -86,14 +86,28 @@ export default function AdminDashboard() {
   }
 
   if (error) {
+    const isAccessDenied = error.includes('нет прав доступа');
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <h1 className="text-2xl font-bold text-red-400 mb-4">Ошибка доступа</h1>
           <p className="text-slate-300 mb-4">{error}</p>
+          {isAccessDenied && (
+            <div className="mb-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+              <p className="text-sm text-amber-200 mb-3">
+                Чтобы получить доступ к админ-панели, нужно назначить себя администратором.
+              </p>
+              <Link
+                href="/admin/setup"
+                className="inline-block px-6 py-2 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-lg transition-colors"
+              >
+                Назначить меня админом
+              </Link>
+            </div>
+          )}
           <Link
             href="/"
-            className="text-sky-400 hover:text-sky-300 underline"
+            className="text-sky-400 hover:text-sky-300 underline text-sm"
           >
             Вернуться на главную
           </Link>

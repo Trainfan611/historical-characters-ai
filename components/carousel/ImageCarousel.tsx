@@ -114,13 +114,13 @@ export function ImageCarousel() {
   }
 
   return (
-    <div className="relative w-full overflow-hidden mt-8 max-w-sm mx-auto px-4">
+    <div className="relative w-full overflow-hidden mt-8 max-w-4xl mx-auto px-4">
       <div 
         className="relative w-full"
         style={{ 
-          aspectRatio: '9/16',
-          maxHeight: '600px',
-          minHeight: '400px',
+          aspectRatio: '16/9',
+          maxHeight: '400px',
+          minHeight: '300px',
         }}
       >
         <div

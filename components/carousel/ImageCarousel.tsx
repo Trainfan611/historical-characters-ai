@@ -114,10 +114,10 @@ export function ImageCarousel() {
                   src={image.url}
                   alt={image.alt}
                   fill
-                  className="!object-cover !object-center"
+                  className="!object-cover !object-top"
                   style={{ 
                     objectFit: 'cover',
-                    objectPosition: 'center',
+                    objectPosition: 'top center',
                     minWidth: '100%',
                     minHeight: '100%',
                     width: '100%',

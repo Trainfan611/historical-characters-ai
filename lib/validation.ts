@@ -9,8 +9,8 @@ import { z } from 'zod';
 export const generateImageSchema = z.object({
   personName: z.string()
     .min(2, 'Имя должно быть не менее 2 символов')
-    .max(100, 'Имя слишком длинное')
-    .regex(/^[a-zA-Zа-яА-ЯёЁ\s\-'.,]+$/, 'Недопустимые символы в имени')
+    .max(200, 'Имя слишком длинное')
+    .regex(/^[a-zA-Zа-яА-ЯёЁ\s\-'.,()]+$/, 'Недопустимые символы в имени')
     .trim(),
   personId: z.string().optional(),
   style: z.enum(['realistic', 'artistic', 'historical']).optional().default('realistic'),

@@ -9,6 +9,7 @@ import { generateImageWithOpenAI } from '@/lib/ai/openai-image';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit-simple';
 import { generateImageSchema } from '@/lib/validation';
 import { getUserSafe } from '@/lib/user-safe';
+import { extractPersonName } from '@/lib/person-name-utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -112,11 +113,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Извлекаем только имя и фамилию, убирая дополнительную информацию в скобках
+    // Например: "Уинстон Черчилль (премьер-министр)" -> "Уинстон Черчилль"
+    const cleanPersonName = personName ? extractPersonName(personName) : null;
+
     // Поиск или получение информации о личности
     // Используем улучшенную функцию поиска/создания через интернет
     const { findOrCreatePerson } = await import('@/lib/persons');
     
-    const searchName = personName || (personId ? 
+    const searchName = cleanPersonName || (personId ? 
       (await prisma.historicalPerson.findUnique({ where: { id: personId } }))?.name : 
       null
     );
@@ -213,11 +218,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Сохранение в БД
+    // Используем очищенное имя для сохранения (без дополнительной информации в скобках)
     const generation = await prisma.generation.create({
       data: {
         userId: dbUser.id,
         historicalPersonId: historicalPerson?.id,
-        personName: personInfo.name,
+        personName: personInfo.name, // Используем имя из personInfo (уже очищенное)
         prompt,
         imageUrl,
         style,

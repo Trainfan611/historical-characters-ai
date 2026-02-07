@@ -37,7 +37,7 @@ export function ImageCarousel() {
   const [images, setImages] = useState<CarouselImage[]>(placeholderImages);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const visibleCount = 3; // Всегда показываем 3 фото
+  const visibleCount = 1; // Всегда показываем только 1 фото
 
   // Загружаем реальные изображения из API
   useEffect(() => {

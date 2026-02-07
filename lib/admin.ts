@@ -12,12 +12,23 @@ export async function isAdmin(): Promise<boolean> {
       return false;
     }
 
-    const user = await prisma.user.findUnique({
-      where: { telegramId: (session.user as any).telegramId },
-      select: { isAdmin: true },
-    });
+    // Используем $queryRaw для проверки существования колонки
+    // Если колонка не существует, просто возвращаем false
+    try {
+      const user = await prisma.user.findUnique({
+        where: { telegramId: (session.user as any).telegramId },
+        select: { isAdmin: true },
+      });
 
-    return user?.isAdmin || false;
+      return user?.isAdmin || false;
+    } catch (error: any) {
+      // Если колонка isAdmin не существует, возвращаем false
+      if (error?.message?.includes('isAdmin') || error?.message?.includes('does not exist')) {
+        console.warn('[Admin] Column isAdmin does not exist yet. Please run migration.');
+        return false;
+      }
+      throw error;
+    }
   } catch (error) {
     console.error('[Admin] Error checking admin status:', error);
     return false;
@@ -34,11 +45,28 @@ export async function getCurrentUser() {
       return null;
     }
 
-    const user = await prisma.user.findUnique({
-      where: { telegramId: (session.user as any).telegramId },
-    });
+    try {
+      const user = await prisma.user.findUnique({
+        where: { telegramId: (session.user as any).telegramId },
+      });
 
-    return user;
+      return user;
+    } catch (error: any) {
+      // Если колонка isAdmin не существует, все равно возвращаем пользователя
+      // но без поля isAdmin
+      if (error?.message?.includes('isAdmin') || error?.message?.includes('does not exist')) {
+        console.warn('[Admin] Column isAdmin does not exist. Fetching user without isAdmin field.');
+        // Пытаемся получить пользователя через raw query без isAdmin
+        const result = await prisma.$queryRaw<Array<{ id: string; telegramId: string; username: string | null; firstName: string | null; lastName: string | null; photoUrl: string | null; isSubscribed: boolean; createdAt: Date; updatedAt: Date }>>`
+          SELECT id, "telegramId", username, "firstName", "lastName", "photoUrl", "isSubscribed", "createdAt", "updatedAt"
+          FROM "User"
+          WHERE "telegramId" = ${(session.user as any).telegramId}
+          LIMIT 1
+        `;
+        return result[0] || null;
+      }
+      throw error;
+    }
   } catch (error) {
     console.error('[Admin] Error getting current user:', error);
     return null;

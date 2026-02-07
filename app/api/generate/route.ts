@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { searchHistoricalPerson } from '@/lib/ai/perplexity';
-import { generateImagePrompt } from '@/lib/ai/openai';
+import { generateImagePrompt } from '@/lib/ai/gemini';
+import { generateImageWithNanoBanana } from '@/lib/ai/nano-banana';
 import { generateImage } from '@/lib/ai/openrouter';
 import { generateImageWithOpenAI } from '@/lib/ai/openai-image';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit-simple';
@@ -193,42 +194,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Генерация изображения
-    // ВРЕМЕННО: Используем OpenAI DALL-E для генерации изображений
-    // TODO: Вернуть обратно на Replicate после тестирования
-    const useOpenAIForImage = true; // ВРЕМЕННО принудительно включено
-    // const useOpenAIForImage = process.env.USE_OPENAI_FOR_IMAGE === 'true'; // Оригинальная строка
-    console.log(`[Generate] Generating image using ${useOpenAIForImage ? 'OpenAI DALL-E (experimental)' : 'Replicate (default)'}...`);
+    // Используем Nano Banana для генерации изображений
+    console.log('[Generate] Generating image using Nano Banana...');
     let imageUrl: string;
     try {
-      if (useOpenAIForImage) {
-        // Экспериментальная версия: используем OpenAI DALL-E для генерации изображений
-        imageUrl = await generateImageWithOpenAI(prompt);
-        console.log('[Generate] Image generated with OpenAI:', imageUrl);
-      } else {
-        // Стандартная версия: используем Replicate
-        imageUrl = await generateImage(prompt);
-        console.log('[Generate] Image generated with Replicate:', imageUrl);
-      }
+      imageUrl = await generateImageWithNanoBanana(prompt);
+      console.log('[Generate] Image generated with Nano Banana:', imageUrl);
     } catch (error: any) {
-      console.error('[Generate] Error generating image:', error);
+      console.error('[Generate] Error generating image with Nano Banana:', error);
       
-      // Fallback: если OpenAI не сработал, пробуем Replicate
-      if (useOpenAIForImage) {
-        console.log('[Generate] OpenAI failed, falling back to Replicate...');
-        try {
-          imageUrl = await generateImage(prompt);
-          console.log('[Generate] Fallback to Replicate successful');
-        } catch (fallbackError: any) {
-          console.error('[Generate] Fallback to Replicate also failed:', fallbackError);
-          return NextResponse.json(
-            { 
-              error: 'Failed to generate image',
-              details: error.message
-            },
-            { status: 500 }
-          );
-        }
-      } else {
+      // Fallback: если Nano Banana не сработал, пробуем Replicate
+      console.log('[Generate] Nano Banana failed, falling back to Replicate...');
+      try {
+        imageUrl = await generateImage(prompt);
+        console.log('[Generate] Fallback to Replicate successful');
+      } catch (fallbackError: any) {
+        console.error('[Generate] Fallback to Replicate also failed:', fallbackError);
         return NextResponse.json(
           { 
             error: 'Failed to generate image',

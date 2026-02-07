@@ -1,10 +1,13 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import axios from 'axios';
 import { PersonInfo } from './perplexity';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// Согласно официальной документации: https://ai.google.dev/api?hl=ru
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 /**
  * Генерация промпта для создания изображения исторической личности через Gemini
+ * Документация: https://ai.google.dev/api?hl=ru
  * С fallback на OpenAI если Gemini недоступен
  */
 export async function generateImagePrompt(
@@ -17,9 +20,7 @@ export async function generateImagePrompt(
       console.log('[Gemini] Starting prompt generation for:', personInfo.name);
       console.log('[Gemini] API key length:', GEMINI_API_KEY?.length || 0);
 
-      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-
+      // Согласно документации, используем заголовок x-goog-api-key
       const systemPrompt = `You are an expert at creating detailed prompts for AI image generation. 
 Create a detailed, vivid description of a historical person that will be used to generate a realistic portrait.
 Focus on physical appearance, clothing, setting, and historical accuracy.`;
@@ -45,14 +46,61 @@ Create a detailed prompt (2-3 sentences) that describes:
 
 The prompt should be in English and suitable for AI image generation models like Flux or Stable Diffusion.`;
 
+      // Согласно документации, формат запроса:
+      // {
+      //   "contents": [
+      //     {
+      //       "parts": [
+      //         {
+      //           "text": "prompt text"
+      //         }
+      //       ]
+      //     }
+      //   ]
+      // }
       const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
 
-      const result = await model.generateContent(fullPrompt);
-      const response = await result.response;
-      const prompt = response.text();
+      const response = await axios.post(
+        GEMINI_API_URL,
+        {
+          contents: [
+            {
+              parts: [
+                {
+                  text: fullPrompt,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          headers: {
+            'x-goog-api-key': GEMINI_API_KEY, // Согласно документации
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000,
+        }
+      );
+
+      // Согласно документации, ответ имеет формат:
+      // {
+      //   "candidates": [
+      //     {
+      //       "content": {
+      //         "parts": [
+      //           {
+      //             "text": "response text"
+      //           }
+      //         ],
+      //         "role": "model"
+      //       }
+      //     }
+      //   ]
+      // }
+      const prompt = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!prompt) {
-        throw new Error('Failed to generate prompt from Gemini');
+        throw new Error('Failed to generate prompt from Gemini: No text in response');
       }
 
       console.log('[Gemini] Prompt generated successfully:', prompt.substring(0, 100));
@@ -62,12 +110,14 @@ The prompt should be in English and suitable for AI image generation models like
     } catch (error: any) {
       console.error('[Gemini] Error generating prompt:', {
         message: error.message,
-        status: error.status,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
       });
 
-      // Если ошибка 403 (API не включен) или другая ошибка, пробуем fallback на OpenAI
-      if (error.status === 403 || error.message?.includes('SERVICE_DISABLED')) {
-        console.log('[Gemini] API not enabled, falling back to OpenAI...');
+      // Если ошибка 403 (API не включен) или 401 (неверный ключ), пробуем fallback на OpenAI
+      if (error.response?.status === 403 || error.response?.status === 401) {
+        console.log('[Gemini] API not enabled or invalid key, falling back to OpenAI...');
         return await generateImagePromptWithOpenAI(personInfo, style);
       }
 

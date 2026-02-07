@@ -10,9 +10,49 @@ GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 **Где получить ключ:**
-- Перейдите на https://makersuite.google.com/app/apikey
-- Создайте новый API ключ
+- Перейдите на https://ai.google.dev/api?hl=ru
+- Создайте API ключ в Google AI Studio
 - Скопируйте ключ и добавьте в переменные окружения
+
+**Документация:** https://ai.google.dev/api?hl=ru
+
+**API Endpoint (согласно документации):**
+- URL: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`
+- Авторизация: заголовок `x-goog-api-key` (не Bearer токен!)
+- Формат запроса: JSON с объектом `contents` и массивом `parts`
+
+**Структура запроса:**
+```json
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "your prompt here"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Структура ответа:**
+```json
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "response text"
+          }
+        ],
+        "role": "model"
+      }
+    }
+  ]
+}
+```
 
 **Важно:** После получения ключа нужно включить Generative Language API в Google Cloud Console:
 - Перейдите по ссылке из ошибки (если появится) или на https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview

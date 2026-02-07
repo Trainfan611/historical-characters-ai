@@ -21,7 +21,7 @@ export async function generateImageWithOpenAI(prompt: string): Promise<string> {
       throw new Error('OPENAI_API_KEY appears to be invalid (too short or empty)');
     }
 
-    // Используем DALL-E 3 для генерации изображений
+    // Используем DALL-E 3 для генерации изображений (HD качество)
     const response = await axios.post(
       OPENAI_IMAGE_API_URL,
       {
@@ -29,7 +29,7 @@ export async function generateImageWithOpenAI(prompt: string): Promise<string> {
         prompt: prompt,
         n: 1,
         size: '1024x1024', // DALL-E 3 поддерживает: 1024x1024, 1792x1024, 1024x1792
-        quality: 'standard', // 'standard' или 'hd'
+        quality: 'hd', // 'standard' или 'hd' - используем HD для лучшего качества
         response_format: 'url', // 'url' или 'b64_json'
       },
       {

@@ -190,8 +190,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Генерация изображения
-    // Переключение между OpenAI DALL-E и Replicate через feature flag
-    const useOpenAIForImage = process.env.USE_OPENAI_FOR_IMAGE === 'true';
+    // ВРЕМЕННО: Используем OpenAI DALL-E для генерации изображений
+    // TODO: Вернуть обратно на Replicate после тестирования
+    const useOpenAIForImage = true; // ВРЕМЕННО принудительно включено
+    // const useOpenAIForImage = process.env.USE_OPENAI_FOR_IMAGE === 'true'; // Оригинальная строка
     console.log(`[Generate] Generating image using ${useOpenAIForImage ? 'OpenAI DALL-E (experimental)' : 'Replicate (default)'}...`);
     let imageUrl: string;
     try {

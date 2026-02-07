@@ -77,13 +77,28 @@ export async function GET(request: NextRequest) {
       sortedFeatured.push(...additionalGenerations);
     }
 
-    return NextResponse.json({
-      generations: sortedFeatured.map((g) => ({
+    // Фильтруем изображения с валидными URL (исключаем старые Replicate URL, которые могут быть недоступны)
+    const validGenerations = sortedFeatured
+      .filter((g) => {
+        const url = g.imageUrl;
+        // Проверяем, что URL валидный и не является старым Replicate URL (которые могут быть недоступны)
+        if (!url || url.trim() === '') return false;
+        // Исключаем старые Replicate delivery URLs, которые могут быть недоступны
+        if (url.includes('replicate.delivery') && !url.includes('oaidalleapiprodscus')) {
+          // Проверяем, что это не старый формат Replicate
+          return false;
+        }
+        return true;
+      })
+      .map((g) => ({
         id: g.id,
         url: g.imageUrl,
         alt: g.personName,
         personName: g.personName,
-      })),
+      }));
+
+    return NextResponse.json({
+      generations: validGenerations,
     });
   } catch (error) {
     console.error('Error fetching public generations:', error);

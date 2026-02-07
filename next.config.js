@@ -15,11 +15,16 @@ const nextConfig = {
   },
   
   images: {
-    domains: ['localhost'],
+    // Используем только remotePatterns (domains устарела)
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '8080',
       },
     ],
     formats: ['image/avif', 'image/webp'],

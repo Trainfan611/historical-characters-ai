@@ -23,6 +23,24 @@ export async function getUserSafe(telegramId: string) {
     if (error?.message?.includes('isAdmin') || error?.message?.includes('does not exist')) {
       console.warn('[UserSafe] Column isAdmin does not exist. Using raw query.');
       try {
+        // Пытаемся добавить колонку, если её нет (только один раз)
+        try {
+          await prisma.$executeRawUnsafe(`
+            ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isAdmin" BOOLEAN NOT NULL DEFAULT false;
+          `);
+          await prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS "User_isAdmin_idx" ON "User"("isAdmin");
+          `);
+          console.log('[UserSafe] Column isAdmin added successfully');
+          // После добавления колонки, перегенерируем Prisma Client
+          // Но для этого нужен перезапуск, поэтому пока используем raw query
+        } catch (alterError: any) {
+          // Игнорируем ошибки, если колонка уже существует
+          if (!alterError?.message?.includes('already exists') && !alterError?.message?.includes('duplicate')) {
+            console.warn('[UserSafe] Could not add isAdmin column:', alterError.message);
+          }
+        }
+        
         const result = await prisma.$queryRaw<Array<{
           id: string;
           telegramId: string;
@@ -70,6 +88,22 @@ export async function getUserByIdSafe(userId: string) {
     if (error?.message?.includes('isAdmin') || error?.message?.includes('does not exist')) {
       console.warn('[UserSafe] Column isAdmin does not exist. Using raw query.');
       try {
+        // Пытаемся добавить колонку, если её нет (только один раз)
+        try {
+          await prisma.$executeRawUnsafe(`
+            ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isAdmin" BOOLEAN NOT NULL DEFAULT false;
+          `);
+          await prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS "User_isAdmin_idx" ON "User"("isAdmin");
+          `);
+          console.log('[UserSafe] Column isAdmin added successfully');
+        } catch (alterError: any) {
+          // Игнорируем ошибки, если колонка уже существует
+          if (!alterError?.message?.includes('already exists') && !alterError?.message?.includes('duplicate')) {
+            console.warn('[UserSafe] Could not add isAdmin column:', alterError.message);
+          }
+        }
+        
         const result = await prisma.$queryRaw<Array<{
           id: string;
           telegramId: string;

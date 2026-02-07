@@ -151,6 +151,11 @@ export function ImageCarousel() {
                     loading={isVisible ? 'eager' : 'lazy'}
                     quality={60}
                     priority={isVisible && index < visibleCount}
+                    onError={(e) => {
+                      // Обработка ошибок загрузки изображений (404 и т.д.)
+                      console.warn('[Carousel] Image load error:', image.url);
+                      // Можно заменить на placeholder или скрыть изображение
+                    }}
                   />
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/90 to-transparent p-2 pointer-events-none">
                     <p className="text-xs text-slate-200 font-medium truncate">

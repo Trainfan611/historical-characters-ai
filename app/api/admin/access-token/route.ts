@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
 /**
  * GET /api/admin/access-token/verify?token=...
  * Проверяет валидность токена доступа
+ * Простая проверка: если пользователь админ и есть токен - доступ разрешен
  */
 export async function GET(request: NextRequest) {
   try {
@@ -63,16 +64,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ valid: false, error: 'Token required' }, { status: 400 });
     }
 
-    // В production здесь должна быть проверка токена из базы данных или Redis
-    // Для простоты проверяем через сессию и isAdmin
+    // Проверяем через сессию и isAdmin
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ valid: false }, { status: 401 });
+      return NextResponse.json({ valid: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const adminStatus = await isAdmin();
+    
+    // Если пользователь админ и есть токен - доступ разрешен
+    // В production здесь должна быть проверка токена из базы данных или Redis
     return NextResponse.json({
-      valid: adminStatus,
+      valid: adminStatus && !!token,
       isAdmin: adminStatus,
     });
   } catch (error: any) {

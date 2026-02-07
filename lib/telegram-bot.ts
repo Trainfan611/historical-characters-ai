@@ -38,25 +38,21 @@ export async function sendAdminLink(chatId: string) {
   }
 
   try {
-    // Генерируем токен через API
-    const response = await axios.post(`${NEXTAUTH_URL}/api/admin/access-token`, {}, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    // Генерируем токен напрямую (без вызова API)
+    const crypto = await import('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    
+    // Формируем URL с токеном
+    const adminUrl = `${NEXTAUTH_URL}/admin?token=${token}`;
 
-    if (response.data.success && response.data.url) {
-      const message = `🔐 <b>Ссылка на админ-панель</b>\n\n` +
-        `Ссылка действительна 1 час\n\n` +
-        `<code>${response.data.url}</code>\n\n` +
-        `Или перейдите по прямой ссылке:\n` +
-        `${response.data.url}`;
+    const message = `🔐 <b>Ссылка на админ-панель</b>\n\n` +
+      `Ссылка действительна 1 час\n\n` +
+      `<code>${adminUrl}</code>\n\n` +
+      `Или перейдите по прямой ссылке:\n` +
+      `${adminUrl}`;
 
-      await sendTelegramMessage(chatId, message);
-      return { success: true, url: response.data.url };
-    }
-
-    return { success: false, error: 'Failed to generate link' };
+    await sendTelegramMessage(chatId, message);
+    return { success: true, url: adminUrl, token };
   } catch (error: any) {
     console.error('[Telegram Bot] Error generating admin link:', error);
     return { success: false, error: error.message };

@@ -44,8 +44,22 @@ export async function generateImageWithNanoBanana(prompt: string): Promise<strin
     );
 
     // Проверяем ответ
-    if (generateResponse.data?.code !== 200) {
-      throw new Error(`Nano Banana API error: ${generateResponse.data?.msg || 'Unknown error'}`);
+    const responseCode = generateResponse.data?.code;
+    const responseMsg = generateResponse.data?.msg;
+    
+    if (responseCode !== 200) {
+      console.error('[Nano Banana] API returned error:', {
+        code: responseCode,
+        msg: responseMsg,
+        data: generateResponse.data,
+      });
+      
+      // Если ошибка доступа, выбрасываем понятную ошибку
+      if (responseMsg?.includes('access') || responseMsg?.includes('permission')) {
+        throw new Error(`Nano Banana API access denied: ${responseMsg}. Please check your API key at https://nanobananaapi.ai/api-key`);
+      }
+      
+      throw new Error(`Nano Banana API error: ${responseMsg || 'Unknown error'}`);
     }
 
     const taskId = generateResponse.data?.data?.taskId;
@@ -61,26 +75,34 @@ export async function generateImageWithNanoBanana(prompt: string): Promise<strin
     console.log('[Nano Banana] ✓ Generation succeeded, image URL:', imageUrl);
     return imageUrl;
   } catch (error: any) {
-    console.error('[Nano Banana] Error generating image:', {
+    const errorStatus = error.response?.status;
+    const errorData = error.response?.data;
+    
+    console.error('[Nano Banana] ✗ Error generating image:', {
       message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
+      status: errorStatus,
       statusText: error.response?.statusText,
+      responseData: errorData,
     });
 
-    if (error.response?.status === 401) {
-      throw new Error('NANO_BANANA_API_KEY is invalid or expired. Please check your API key at https://nanobananaapi.ai/api-key');
+    // Обработка различных типов ошибок
+    if (errorStatus === 401 || error.message?.includes('access') || error.message?.includes('permission')) {
+      const errorMsg = error.message?.includes('access') || error.message?.includes('permission') 
+        ? error.message 
+        : 'NANO_BANANA_API_KEY is invalid or expired';
+      throw new Error(`${errorMsg}. Please check your API key at https://nanobananaapi.ai/api-key`);
     }
 
-    if (error.response?.status === 429) {
+    if (errorStatus === 429) {
       throw new Error('Nano Banana API rate limit exceeded. Please try again later.');
     }
 
-    if (error.response?.status === 400) {
-      const errorMessage = error.response?.data?.msg || error.response?.data?.message || error.message;
+    if (errorStatus === 400) {
+      const errorMessage = errorData?.msg || errorData?.message || error.message;
       throw new Error(`Invalid request to Nano Banana API: ${errorMessage}`);
     }
 
+    // Пробрасываем ошибку дальше для fallback на Replicate
     throw new Error(`Failed to generate image with Nano Banana: ${error.message}`);
   }
 }

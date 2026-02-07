@@ -21,25 +21,55 @@ export async function generateImageWithOpenAI(prompt: string): Promise<string> {
       throw new Error('OPENAI_API_KEY appears to be invalid (too short or empty)');
     }
 
-    // Используем DALL-E 3 для генерации изображений (HD качество)
-    const response = await axios.post(
-      OPENAI_IMAGE_API_URL,
-      {
-        model: 'dall-e-3',
-        prompt: prompt,
-        n: 1,
-        size: '1024x1024', // DALL-E 3 поддерживает: 1024x1024, 1792x1024, 1024x1792
-        quality: 'hd', // 'standard' или 'hd' - используем HD для лучшего качества
-        response_format: 'url', // 'url' или 'b64_json'
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+    // Используем gpt-image-1-mini для генерации изображений (более совершенная модель)
+    // Если модель недоступна, будет fallback на DALL-E 3
+    let response;
+    try {
+      response = await axios.post(
+        OPENAI_IMAGE_API_URL,
+        {
+          model: 'gpt-image-1-mini', // Пробуем использовать новую модель
+          prompt: prompt,
+          n: 1,
+          size: '1024x1024', // Стандартный размер
+          quality: 'hd', // HD качество для лучших результатов
+          response_format: 'url', // 'url' или 'b64_json'
         },
-        timeout: 60000, // 60 секунд для генерации
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 60000, // 60 секунд для генерации
+        }
+      );
+      console.log('[OpenAI Image] Successfully used gpt-image-1-mini model');
+    } catch (modelError: any) {
+      // Если модель не найдена, используем DALL-E 3 как fallback
+      if (modelError.response?.status === 400 && modelError.response?.data?.error?.message?.includes('model')) {
+        console.log('[OpenAI Image] gpt-image-1-mini not available, falling back to dall-e-3');
+        response = await axios.post(
+          OPENAI_IMAGE_API_URL,
+          {
+            model: 'dall-e-3',
+            prompt: prompt,
+            n: 1,
+            size: '1024x1024',
+            quality: 'hd',
+            response_format: 'url',
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 60000,
+          }
+        );
+      } else {
+        throw modelError; // Пробрасываем другие ошибки
       }
-    );
+    }
 
     const imageUrl = response.data.data?.[0]?.url;
     if (!imageUrl) {

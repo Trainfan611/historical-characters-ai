@@ -24,21 +24,37 @@ GEMINI_API_KEY=your_gemini_api_key_here
 ### Nano Banana API (для генерации изображений)
 ```
 NANO_BANANA_API_KEY=your_nano_banana_api_key_here
-NANO_BANANA_API_URL=https://api.nanobanana.com/v1/images/generate
 ```
 
-**Для Banana.dev (альтернативный формат):**
+**Где получить ключ:**
+- Перейдите на https://www.nano-banana.run
+- Получите API ключ из Google AI Studio (согласно документации)
+- Скопируйте ключ и добавьте в переменные окружения
+
+**Документация:** https://www.nano-banana.run/tutorials/api-guide
+
+**API Endpoints (согласно документации):**
+- Базовый URL: `https://api.nanobanana.ai`
+- Для генерации: `/v1/images/generate` (автоматически определяется)
+- Авторизация: `Bearer YOUR_API_KEY`
+
+**Rate Limits (согласно документации):**
+- Free Tier: 100 запросов/месяц, 10 запросов/минуту
+- Basic Plan ($10/мес): 1,000 запросов/месяц
+- Pro Plan ($50/мес): 10,000 запросов/месяц
+- Лимит размера файла: 10MB на изображение
+
+**Для Banana.dev (fallback, если Nano Banana не работает):**
 ```
-NANO_BANANA_API_KEY=your_banana_api_key
 BANANA_API_URL=https://api.banana.dev/start/v1
 BANANA_MODEL_KEY=flux
 ```
 
 **Примечание:** 
-- Если URL API отличается, обновите `NANO_BANANA_API_URL`
-- Если используется Banana.dev, установите `BANANA_API_URL` и `BANANA_MODEL_KEY`
-- Система автоматически пробует разные форматы API при ошибках
-- Если формат API отличается от стандартного, может потребоваться корректировка в `lib/ai/nano-banana.ts`
+- Система автоматически пробует разные endpoints при ошибках
+- Если основной endpoint не работает, пробуются альтернативные варианты
+- При ошибках SSL или 404 система автоматически переключается на Banana.dev формат
+- Fallback на Replicate, если все варианты не работают
 
 ## Как это работает
 

@@ -86,18 +86,39 @@ export function ImageCarousel() {
     return null;
   }
 
-  // Показываем 3 изображения одновременно
-  const visibleCount = 3;
+  // Адаптивное количество видимых изображений
+  const [visibleCount, setVisibleCount] = useState(3);
+
+  useEffect(() => {
+    const updateVisibleCount = () => {
+      if (window.innerWidth < 640) {
+        setVisibleCount(1); // 1 изображение на мобильных
+      } else if (window.innerWidth < 1024) {
+        setVisibleCount(2); // 2 изображения на планшетах
+      } else {
+        setVisibleCount(3); // 3 изображения на десктопе
+      }
+    };
+
+    updateVisibleCount();
+    window.addEventListener('resize', updateVisibleCount);
+    return () => window.removeEventListener('resize', updateVisibleCount);
+  }, []);
+
   const duplicatedImages = [...images, ...images, ...images]; // Для бесшовной прокрутки
 
   return (
-    <div className="relative w-full overflow-hidden mt-8 max-w-3xl mx-auto">
+    <div className="relative w-full overflow-hidden mt-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div 
         className="relative w-full"
-        style={{ aspectRatio: '4/3', height: '100%' }}
+        style={{ 
+          aspectRatio: '4/3',
+          maxHeight: '400px',
+          minHeight: '250px',
+        }}
       >
         <div
-          className="flex transition-transform duration-1000 ease-in-out absolute inset-0 h-full"
+          className="flex transition-transform duration-1000 ease-in-out absolute inset-0 h-full w-full"
           style={{
             transform: `translateX(-${currentIndex * (100 / visibleCount)}%)`,
             width: `${(duplicatedImages.length / visibleCount) * 100}%`,
@@ -106,8 +127,12 @@ export function ImageCarousel() {
           {duplicatedImages.map((image, index) => (
             <div
               key={`${image.id}-${index}`}
-              className="flex-shrink-0 px-1.5 h-full overflow-hidden"
-              style={{ width: `${100 / visibleCount}%` }}
+              className="flex-shrink-0 h-full overflow-hidden"
+              style={{ 
+                width: `${100 / visibleCount}%`,
+                paddingLeft: index === 0 ? '0' : '0.375rem',
+                paddingRight: '0.375rem',
+              }}
             >
               <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-800/80 bg-slate-900 shadow-md flex items-center justify-center">
                 <Image
@@ -118,8 +143,12 @@ export function ImageCarousel() {
                   style={{ 
                     objectFit: 'contain',
                     objectPosition: 'center',
+                    width: '100%',
+                    height: '100%',
+                    maxWidth: '100%',
+                    maxHeight: '100%',
                   }}
-                  sizes="(max-width: 768px) 100vw, 33vw"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   unoptimized
                   priority={index < visibleCount}
                 />

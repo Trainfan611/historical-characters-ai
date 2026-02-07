@@ -91,10 +91,10 @@ export function ImageCarousel() {
   const duplicatedImages = [...images, ...images, ...images]; // Для бесшовной прокрутки
 
   return (
-    <div className="relative w-full overflow-hidden mt-8 max-w-4xl mx-auto">
+    <div className="relative w-full overflow-hidden mt-8 max-w-3xl mx-auto">
       <div 
         className="relative w-full"
-        style={{ aspectRatio: '16/9', height: '100%' }}
+        style={{ aspectRatio: '4/3', height: '100%' }}
       >
         <div
           className="flex transition-transform duration-1000 ease-in-out absolute inset-0 h-full"
@@ -109,19 +109,15 @@ export function ImageCarousel() {
               className="flex-shrink-0 px-1.5 h-full overflow-hidden"
               style={{ width: `${100 / visibleCount}%` }}
             >
-              <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-800/80 bg-slate-900/60 shadow-md">
+              <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-800/80 bg-slate-900 shadow-md flex items-center justify-center">
                 <Image
                   src={image.url}
                   alt={image.alt}
                   fill
-                  className="!object-cover !object-top"
+                  className="!object-contain !object-center"
                   style={{ 
-                    objectFit: 'cover',
-                    objectPosition: 'top center',
-                    minWidth: '100%',
-                    minHeight: '100%',
-                    width: '100%',
-                    height: '100%',
+                    objectFit: 'contain',
+                    objectPosition: 'center',
                   }}
                   sizes="(max-width: 768px) 100vw, 33vw"
                   unoptimized

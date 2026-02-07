@@ -42,7 +42,7 @@ export function ImageCarousel() {
   useEffect(() => {
     async function fetchImages() {
       try {
-        const response = await fetch('/api/generations/public?limit=12');
+        const response = await fetch('/api/generations/public?limit=5');
         if (response.ok) {
           const data = await response.json();
           if (data.generations && data.generations.length > 0) {

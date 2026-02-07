@@ -11,8 +11,11 @@ export async function getUserSafe(telegramId: string) {
       where: { telegramId },
     });
     // Убеждаемся, что isAdmin существует, если нет - добавляем false
-    if (user && !('isAdmin' in user)) {
-      return { ...user, isAdmin: false };
+    if (user) {
+      // Проверяем, есть ли поле isAdmin в объекте
+      if (!('isAdmin' in user) || user.isAdmin === undefined) {
+        return { ...(user as any), isAdmin: false };
+      }
     }
     return user;
   } catch (error: any) {
@@ -56,8 +59,11 @@ export async function getUserByIdSafe(userId: string) {
       where: { id: userId },
     });
     // Убеждаемся, что isAdmin существует, если нет - добавляем false
-    if (user && !('isAdmin' in user)) {
-      return { ...user, isAdmin: false };
+    if (user) {
+      // Проверяем, есть ли поле isAdmin в объекте
+      if (!('isAdmin' in user) || user.isAdmin === undefined) {
+        return { ...(user as any), isAdmin: false };
+      }
     }
     return user;
   } catch (error: any) {

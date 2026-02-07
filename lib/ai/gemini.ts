@@ -108,22 +108,32 @@ The prompt should be in English and suitable for AI image generation models like
       // Добавляем технические параметры для лучшего качества
       return `${prompt.trim()}, high quality, detailed, professional photography, 8k resolution, historical accuracy`;
     } catch (error: any) {
-      console.error('[Gemini] Error generating prompt:', {
+      const errorStatus = error.response?.status;
+      console.error('[Gemini] ✗ Error generating prompt:', {
         message: error.message,
-        status: error.response?.status,
+        status: errorStatus,
         statusText: error.response?.statusText,
-        data: error.response?.data,
       });
 
-      // Если ошибка 403 (API не включен) или 401 (неверный ключ), пробуем fallback на OpenAI
-      if (error.response?.status === 403 || error.response?.status === 401) {
-        console.log('[Gemini] API not enabled or invalid key (status:', error.response?.status, '), falling back to OpenAI...');
-        return await generateImagePromptWithOpenAI(personInfo, style);
+      // Всегда пробуем fallback на OpenAI при любой ошибке
+      console.log('[Gemini] ===== Attempting fallback to OpenAI =====');
+      console.log('[Gemini] Error status:', errorStatus || 'unknown');
+      
+      if (errorStatus === 403 || errorStatus === 401) {
+        console.log('[Gemini] API not enabled or invalid key, using OpenAI fallback...');
+      } else {
+        console.log('[Gemini] Other error occurred, using OpenAI fallback...');
       }
-
-      // Для других ошибок тоже пробуем OpenAI
-      console.log('[Gemini] Error occurred (status:', error.response?.status || 'unknown', '), falling back to OpenAI...');
-      return await generateImagePromptWithOpenAI(personInfo, style);
+      
+      try {
+        const fallbackPrompt = await generateImagePromptWithOpenAI(personInfo, style);
+        console.log('[Gemini] ✓ OpenAI fallback successful');
+        return fallbackPrompt;
+      } catch (fallbackError: any) {
+        console.error('[Gemini] ✗ OpenAI fallback also failed:', fallbackError.message);
+        // Если даже fallback не сработал, пробрасываем ошибку дальше
+        throw fallbackError;
+      }
     }
   }
 

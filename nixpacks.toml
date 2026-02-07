@@ -2,11 +2,11 @@
 # Ускоряет сборку за счёт кэширования
 
 [phases.setup]
-nixPkgs = ["nodejs_20", "npm"]
+nixPkgs = ["nodejs_20"]
 
 [phases.install]
 cmds = [
-  "npm ci --only=production --prefer-offline --no-audit"
+  "npm ci --prefer-offline --no-audit"
 ]
 
 [phases.build]

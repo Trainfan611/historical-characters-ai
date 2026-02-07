@@ -37,8 +37,7 @@ export function ImageCarousel() {
   const [images, setImages] = useState<CarouselImage[]>(placeholderImages);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [visibleCount, setVisibleCount] = useState(3);
-  const resizeTimeoutRef = useRef<NodeJS.Timeout>();
+  const visibleCount = 3; // Всегда показываем 3 фото
 
   // Загружаем реальные изображения из API
   useEffect(() => {
@@ -46,7 +45,7 @@ export function ImageCarousel() {
 
     async function fetchImages() {
       try {
-        const response = await fetch('/api/generations/public?limit=5', {
+        const response = await fetch('/api/generations/public?limit=3', {
           cache: 'force-cache', // Кэшируем запрос
         });
         if (response.ok) {
@@ -71,36 +70,7 @@ export function ImageCarousel() {
     };
   }, []);
 
-  // Оптимизированное определение видимого количества с debounce
-  useEffect(() => {
-    const updateVisibleCount = () => {
-      const width = window.innerWidth;
-      if (width < 640) {
-        setVisibleCount(1);
-      } else if (width < 1024) {
-        setVisibleCount(2);
-      } else {
-        setVisibleCount(3);
-      }
-    };
-
-    // Debounce для resize
-    const handleResize = () => {
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
-      }
-      resizeTimeoutRef.current = setTimeout(updateVisibleCount, 150);
-    };
-
-    updateVisibleCount();
-    window.addEventListener('resize', handleResize, { passive: true });
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
-      }
-    };
-  }, []);
+  // Всегда показываем 3 фото, убрана адаптивность
 
   // Автоматическая прокрутка слева направо
   useEffect(() => {
@@ -144,13 +114,13 @@ export function ImageCarousel() {
   }
 
   return (
-    <div className="relative w-full overflow-hidden mt-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="relative w-full overflow-hidden mt-8 max-w-2xl mx-auto px-4">
       <div 
         className="relative w-full"
         style={{ 
           aspectRatio: '4/3',
-          maxHeight: '400px',
-          minHeight: '250px',
+          maxHeight: '200px',
+          minHeight: '150px',
         }}
       >
         <div
@@ -179,7 +149,7 @@ export function ImageCarousel() {
                     className="object-contain object-center"
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     loading={isVisible ? 'eager' : 'lazy'}
-                    unoptimized
+                    quality={60}
                     priority={isVisible && index < visibleCount}
                   />
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/90 to-transparent p-2 pointer-events-none">

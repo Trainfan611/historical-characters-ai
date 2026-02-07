@@ -7,7 +7,7 @@ import { prisma } from '@/lib/db';
  */
 export async function GET(request: NextRequest) {
   try {
-    const limit = parseInt(request.nextUrl.searchParams.get('limit') || '12');
+    const limit = parseInt(request.nextUrl.searchParams.get('limit') || '3');
 
     // Список персонажей для карусели
     const featuredPersons = [

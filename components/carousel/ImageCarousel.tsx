@@ -94,10 +94,10 @@ export function ImageCarousel() {
     <div className="relative w-full overflow-hidden mt-8 max-w-4xl mx-auto">
       <div 
         className="relative w-full"
-        style={{ aspectRatio: '16/9' }}
+        style={{ aspectRatio: '16/9', height: '100%' }}
       >
         <div
-          className="flex transition-transform duration-1000 ease-in-out absolute inset-0"
+          className="flex transition-transform duration-1000 ease-in-out absolute inset-0 h-full"
           style={{
             transform: `translateX(-${currentIndex * (100 / visibleCount)}%)`,
             width: `${(duplicatedImages.length / visibleCount) * 100}%`,
@@ -106,7 +106,7 @@ export function ImageCarousel() {
           {duplicatedImages.map((image, index) => (
             <div
               key={`${image.id}-${index}`}
-              className="flex-shrink-0 px-1.5 h-full"
+              className="flex-shrink-0 px-1.5 h-full overflow-hidden"
               style={{ width: `${100 / visibleCount}%` }}
             >
               <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-800/80 bg-slate-900/60 shadow-md">
@@ -118,6 +118,10 @@ export function ImageCarousel() {
                   style={{ 
                     objectFit: 'cover',
                     objectPosition: 'center',
+                    minWidth: '100%',
+                    minHeight: '100%',
+                    width: '100%',
+                    height: '100%',
                   }}
                   sizes="(max-width: 768px) 100vw, 33vw"
                   unoptimized

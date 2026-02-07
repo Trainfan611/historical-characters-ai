@@ -67,22 +67,48 @@ NANO_BANANA_API_KEY=your_nano_banana_api_key_here
 ```
 
 **Где получить ключ:**
-- Перейдите на https://www.nano-banana.run
-- Получите API ключ из Google AI Studio (согласно документации)
+- Перейдите на https://nanobananaapi.ai/api-key
+- Создайте API ключ
 - Скопируйте ключ и добавьте в переменные окружения
 
-**Документация:** https://www.nano-banana.run/tutorials/api-guide
+**Документация:** https://docs.nanobananaapi.ai/quickstart
 
-**API Endpoints (согласно документации):**
-- Базовый URL: `https://api.nanobanana.ai`
-- Для генерации: `/v1/images/generate` (автоматически определяется)
-- Авторизация: `Bearer YOUR_API_KEY`
+**API Endpoints (согласно официальной документации):**
+- Базовый URL: `https://api.nanobananaapi.ai/api/v1/nanobanana`
+- Создание задачи: `POST /generate`
+- Проверка статуса: `GET /record-info?taskId=taskId`
+- Авторизация: `Bearer YOUR_API_KEY` в заголовке `Authorization`
 
-**Rate Limits (согласно документации):**
-- Free Tier: 100 запросов/месяц, 10 запросов/минуту
-- Basic Plan ($10/мес): 1,000 запросов/месяц
-- Pro Plan ($50/мес): 10,000 запросов/месяц
-- Лимит размера файла: 10MB на изображение
+**Формат запроса:**
+```json
+{
+  "prompt": "текст промпта",
+  "type": "TEXTTOIAMGE",
+  "numImages": 1
+}
+```
+
+**Формат ответа (создание задачи):**
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "taskId": "task12345"
+  }
+}
+```
+
+**Статусы задачи:**
+- `0`: GENERATING - генерация в процессе
+- `1`: SUCCESS - успешно завершено
+- `2`: CREATE_TASK_FAILED - ошибка создания задачи
+- `3`: GENERATE_FAILED - ошибка генерации
+
+**Как это работает:**
+1. Создается задача генерации (возвращается `taskId`)
+2. Система опрашивает статус задачи каждые 3 секунды
+3. Когда статус становится `1` (SUCCESS), получается URL изображения из `response.resultImageUrl`
 
 **Для Banana.dev (fallback, если Nano Banana не работает):**
 ```

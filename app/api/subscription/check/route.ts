@@ -54,10 +54,22 @@ export async function POST(request: NextRequest) {
       });
 
       // Обновление статуса подписки у пользователя
-      await prisma.user.update({
-        where: { id: dbUser.id },
-        data: { isSubscribed },
-      });
+      // Используем raw query, чтобы избежать ошибки с isAdmin
+      try {
+        await prisma.user.update({
+          where: { id: dbUser.id },
+          data: { isSubscribed },
+        });
+      } catch (updateError: any) {
+        // Если колонка isAdmin не существует, используем raw query
+        if (updateError?.message?.includes('isAdmin')) {
+          await prisma.$executeRaw`
+            UPDATE "User" SET "isSubscribed" = ${isSubscribed} WHERE id = ${dbUser.id};
+          `;
+        } else {
+          throw updateError;
+        }
+      }
     }
 
     return NextResponse.json({ 

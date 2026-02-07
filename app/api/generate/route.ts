@@ -201,49 +201,57 @@ export async function POST(request: NextRequest) {
     console.log('[Generate] Attempting to generate image using Nano Banana...');
     let imageUrl: string;
     let imageSource = 'unknown';
+    
     try {
       imageUrl = await generateImageWithNanoBanana(prompt);
       imageSource = 'Nano Banana';
       console.log('[Generate] ✓ Image generated successfully with Nano Banana');
       console.log('[Generate] Image URL:', imageUrl);
     } catch (error: any) {
+      // ВАЖНО: Логируем ошибку сразу
       console.error('[Generate] ✗ Nano Banana failed with error:', {
         message: error.message,
         status: error.response?.status,
         code: error.code,
+        stack: error.stack?.substring(0, 200), // Первые 200 символов стека для отладки
       });
       
       // Fallback: если Nano Banana не сработал, пробуем Replicate
-      console.log('[Generate] ===== Attempting fallback to Replicate =====');
-      console.log('[Generate] Checking if REPLICATE_API_KEY is available...');
+      console.log('[Generate] ===== FALLBACK: Attempting to use Replicate =====');
+      console.log('[Generate] Step 1: Checking if REPLICATE_API_KEY is available...');
       
-      if (!process.env.REPLICATE_API_KEY) {
-        console.error('[Generate] ✗ REPLICATE_API_KEY is not set! Cannot use fallback.');
+      const replicateKey = process.env.REPLICATE_API_KEY;
+      console.log('[Generate] REPLICATE_API_KEY exists:', !!replicateKey);
+      console.log('[Generate] REPLICATE_API_KEY length:', replicateKey?.length || 0);
+      
+      if (!replicateKey) {
+        console.error('[Generate] ✗ CRITICAL: REPLICATE_API_KEY is not set! Cannot use fallback.');
         return NextResponse.json(
           { 
             error: 'Failed to generate image',
-            details: `Nano Banana failed: ${error.message}. Replicate fallback unavailable: REPLICATE_API_KEY not set.`
+            details: `Nano Banana failed: ${error.message}. Replicate fallback unavailable: REPLICATE_API_KEY not set. Please add REPLICATE_API_KEY to Railway environment variables.`
           },
           { status: 500 }
         );
       }
       
-      console.log('[Generate] REPLICATE_API_KEY found, attempting Replicate generation...');
+      console.log('[Generate] Step 2: REPLICATE_API_KEY found, attempting Replicate generation...');
       try {
         imageUrl = await generateImage(prompt);
         imageSource = 'Replicate (fallback)';
-        console.log('[Generate] ✓ Fallback to Replicate successful!');
+        console.log('[Generate] ✓✓✓ Fallback to Replicate SUCCESSFUL! ✓✓✓');
         console.log('[Generate] Image URL:', imageUrl);
       } catch (fallbackError: any) {
-        console.error('[Generate] ✗ Fallback to Replicate also failed:', {
+        console.error('[Generate] ✗✗✗ Fallback to Replicate ALSO FAILED ✗✗✗:', {
           message: fallbackError.message,
           status: fallbackError.response?.status,
           code: fallbackError.code,
+          stack: fallbackError.stack?.substring(0, 200),
         });
         return NextResponse.json(
           { 
             error: 'Failed to generate image',
-            details: `Nano Banana failed: ${error.message}. Replicate fallback also failed: ${fallbackError.message}`
+            details: `Nano Banana failed: ${error.message}. Replicate fallback also failed: ${fallbackError.message}. Please check REPLICATE_API_KEY.`
           },
           { status: 500 }
         );

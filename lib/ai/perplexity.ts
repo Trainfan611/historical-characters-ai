@@ -45,11 +45,12 @@ export async function searchHistoricalPerson(personName: string): Promise<Person
     Be specific about appearance, clothing, and historical context.`;
 
     // Пробуем несколько актуальных моделей Perplexity
+    // Обновлено: используем актуальные модели (sonar работает как fallback)
     const models = [
-      'llama-3.1-sonar-huge-128k-online',
-      'llama-3.1-sonar-small-128k-online',
-      'sonar',
-      'llama-3.1-70b-instruct',
+      'sonar', // Основная модель для онлайн-поиска
+      'sonar-pro', // Pro версия если доступна
+      'llama-3.1-70b-instruct', // Fallback модель
+      'llama-3-70b-instruct', // Дополнительный fallback
     ];
 
     let lastError: any = null;

@@ -7,9 +7,14 @@ import { prisma } from './db';
 export async function getUserSafe(telegramId: string) {
   try {
     // Пытаемся получить пользователя обычным способом
-    return await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { telegramId },
     });
+    // Убеждаемся, что isAdmin существует, если нет - добавляем false
+    if (user && !('isAdmin' in user)) {
+      return { ...user, isAdmin: false };
+    }
+    return user;
   } catch (error: any) {
     // Если колонка isAdmin не существует, получаем через raw query
     if (error?.message?.includes('isAdmin') || error?.message?.includes('does not exist')) {
@@ -31,7 +36,8 @@ export async function getUserSafe(telegramId: string) {
           WHERE "telegramId" = ${telegramId}
           LIMIT 1
         `;
-        return result[0] || null;
+        // Добавляем isAdmin: false по умолчанию, если колонка не существует
+        return result[0] ? { ...result[0], isAdmin: false } : null;
       } catch (rawError) {
         console.error('[UserSafe] Raw query failed:', rawError);
         throw error; // Выбрасываем оригинальную ошибку
@@ -46,9 +52,14 @@ export async function getUserSafe(telegramId: string) {
  */
 export async function getUserByIdSafe(userId: string) {
   try {
-    return await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: userId },
     });
+    // Убеждаемся, что isAdmin существует, если нет - добавляем false
+    if (user && !('isAdmin' in user)) {
+      return { ...user, isAdmin: false };
+    }
+    return user;
   } catch (error: any) {
     if (error?.message?.includes('isAdmin') || error?.message?.includes('does not exist')) {
       console.warn('[UserSafe] Column isAdmin does not exist. Using raw query.');
@@ -69,7 +80,8 @@ export async function getUserByIdSafe(userId: string) {
           WHERE id = ${userId}
           LIMIT 1
         `;
-        return result[0] || null;
+        // Добавляем isAdmin: false по умолчанию, если колонка не существует
+        return result[0] ? { ...result[0], isAdmin: false } : null;
       } catch (rawError) {
         console.error('[UserSafe] Raw query failed:', rawError);
         throw error;

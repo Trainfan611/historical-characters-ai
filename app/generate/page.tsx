@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
@@ -28,6 +28,7 @@ export default function GeneratePage() {
     remaining: number;
     isLimitReached: boolean;
   } | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -89,24 +90,46 @@ export default function GeneratePage() {
       return;
     }
 
-    setIsSearching(true);
-    try {
-      // Используем интернет-поиск по умолчанию для расширенного поиска
-      const response = await axios.get(
-        `/api/persons?q=${encodeURIComponent(query)}&useInternet=true&limit=10`
-      );
-      setSearchResults(response.data.persons || []);
-      
-      // Показываем подсказку если результаты из интернета
-      if (response.data.fromInternet && response.data.persons.length > 0) {
-        console.log('Найдено через интернет-поиск');
-      }
-    } catch (error) {
-      console.error('Error searching persons:', error);
-    } finally {
-      setIsSearching(false);
+    // Очищаем предыдущий таймер
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
+
+    // Debounce: ждем 300ms перед запросом
+    searchTimeoutRef.current = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        // Используем новый endpoint для автодополнения с конкретными подсказками
+        const response = await axios.get(
+          `/api/persons/autocomplete?q=${encodeURIComponent(query)}&limit=5`
+        );
+        
+        // Преобразуем подсказки в формат для отображения
+        const suggestions = (response.data.suggestions || []).map((suggestion: any) => ({
+          id: suggestion.name,
+          name: suggestion.displayName || suggestion.name,
+          era: suggestion.era,
+          originalName: suggestion.name, // Сохраняем оригинальное имя для генерации
+        }));
+        
+        setSearchResults(suggestions);
+      } catch (error) {
+        console.error('Error searching persons:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
   };
+
+  // Очистка таймера при размонтировании
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleGenerate = async () => {
     if (!personName.trim()) {
@@ -291,19 +314,20 @@ export default function GeneratePage() {
             )}
 
             {searchResults.length > 0 && (
-              <div className="mt-3 border border-slate-700 rounded-xl max-h-52 overflow-y-auto bg-slate-950/90">
-                {searchResults.map((person) => (
+              <div className="mt-3 border border-slate-700 rounded-xl max-h-52 overflow-y-auto bg-slate-950/90 shadow-lg">
+                {searchResults.map((person: any) => (
                   <button
                     key={person.id}
                     onClick={() => {
-                      setPersonName(person.name);
+                      // Используем оригинальное имя для генерации, но показываем красивое отображение
+                      setPersonName(person.originalName || person.name);
                       setSearchResults([]);
                     }}
-                    className="w-full text-left px-4 py-2.5 hover:bg-slate-900 border-b border-slate-800 last:border-b-0 text-sm"
+                    className="w-full text-left px-4 py-2.5 hover:bg-slate-900/80 hover:border-l-2 hover:border-l-sky-400 border-b border-slate-800 last:border-b-0 text-sm transition-all"
                   >
                     <div className="font-medium text-slate-50">{person.name}</div>
                     {person.era && (
-                      <div className="text-xs text-slate-500">{person.era}</div>
+                      <div className="text-xs text-slate-400 mt-0.5">{person.era}</div>
                     )}
                   </button>
                 ))}

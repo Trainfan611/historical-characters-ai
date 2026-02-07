@@ -79,19 +79,6 @@ export async function POST(request: NextRequest) {
       }
       throw updateError;
     }
-
-    console.log(`[Admin] User ${telegramId} (${updated.firstName || updated.username}) is now admin`);
-
-    return NextResponse.json({
-      success: true,
-      message: 'Вы теперь админ!',
-      user: {
-        telegramId: updated.telegramId,
-        username: updated.username,
-        firstName: updated.firstName,
-        isAdmin: updated.isAdmin,
-      },
-    });
   } catch (error: any) {
     console.error('[Admin] Error making user admin:', error);
     return NextResponse.json(

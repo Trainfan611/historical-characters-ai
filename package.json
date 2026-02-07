@@ -9,9 +9,11 @@
     "lint": "next lint",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy || prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "admin:make": "tsx scripts/make-admin.ts"
+    "admin:make": "tsx scripts/make-admin.ts",
+    "railway:setup": "node scripts/setup-railway.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

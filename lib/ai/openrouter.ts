@@ -38,12 +38,11 @@ async function generateWithReplicate(prompt: string): Promise<string> {
     }
     
     // Используем правильный формат для Replicate API
-    // Model: black-forest-labs/flux-schnell для дешёвой и быстрой генерации ($0.002 вместо $0.01)
-    // flux-schnell в 5 раз дешевле flux-dev при сохранении хорошего качества
+    // Model: black-forest-labs/flux-dev для быстрой генерации
     const createResponse = await axios.post(
       REPLICATE_API_URL,
       {
-        version: 'black-forest-labs/flux-schnell',
+        version: 'black-forest-labs/flux-dev',
         input: {
           prompt: prompt,
           num_outputs: 1,

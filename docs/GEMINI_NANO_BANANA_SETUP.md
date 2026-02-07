@@ -14,14 +14,30 @@ GEMINI_API_KEY=your_gemini_api_key_here
 - Создайте новый API ключ
 - Скопируйте ключ и добавьте в переменные окружения
 
+**Важно:** После получения ключа нужно включить Generative Language API в Google Cloud Console:
+- Перейдите по ссылке из ошибки (если появится) или на https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview
+- Нажмите "Enable" (Включить)
+- Подождите несколько минут для активации
+
+**Fallback:** Если Gemini API не включен или недоступен, система автоматически использует OpenAI для генерации промптов.
+
 ### Nano Banana API (для генерации изображений)
 ```
 NANO_BANANA_API_KEY=your_nano_banana_api_key_here
 NANO_BANANA_API_URL=https://api.nanobanana.com/v1/images/generate
 ```
 
+**Для Banana.dev (альтернативный формат):**
+```
+NANO_BANANA_API_KEY=your_banana_api_key
+BANANA_API_URL=https://api.banana.dev/start/v1
+BANANA_MODEL_KEY=flux
+```
+
 **Примечание:** 
 - Если URL API отличается, обновите `NANO_BANANA_API_URL`
+- Если используется Banana.dev, установите `BANANA_API_URL` и `BANANA_MODEL_KEY`
+- Система автоматически пробует разные форматы API при ошибках
 - Если формат API отличается от стандартного, может потребоваться корректировка в `lib/ai/nano-banana.ts`
 
 ## Как это работает

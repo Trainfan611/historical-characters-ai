@@ -52,27 +52,62 @@ export async function GET(request: NextRequest) {
     }
 
     // Получаем пользователей
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy,
-        select: {
-          id: true,
-          telegramId: true,
-          username: true,
-          firstName: true,
-          lastName: true,
-          photoUrl: true,
-          isSubscribed: true,
-          isAdmin: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      }),
-      prisma.user.count({ where }),
-    ]);
+    let users: any[];
+    let total: number;
+    
+    try {
+      const result = await Promise.all([
+        prisma.user.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy,
+          select: {
+            id: true,
+            telegramId: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+            photoUrl: true,
+            isSubscribed: true,
+            isAdmin: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        }),
+        prisma.user.count({ where }),
+      ]);
+      users = result[0];
+      total = result[1];
+    } catch (error: any) {
+      // Если колонка isAdmin не существует, получаем без неё
+      if (error?.message?.includes('isAdmin')) {
+        const result = await Promise.all([
+          prisma.user.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy,
+            select: {
+              id: true,
+              telegramId: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+              photoUrl: true,
+              isSubscribed: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          }),
+          prisma.user.count({ where }),
+        ]);
+        users = result[0].map(u => ({ ...u, isAdmin: false }));
+        total = result[1];
+      } else {
+        throw error;
+      }
+    }
 
     // Получаем статистику для каждого пользователя
     const usersWithStats = await Promise.all(

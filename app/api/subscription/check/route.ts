@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { checkChannelSubscription } from '@/lib/telegram';
+import { getUserSafe } from '@/lib/user-safe';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,9 +29,7 @@ export async function POST(request: NextRequest) {
     console.log('[Subscription Check] Result:', isSubscribed);
 
     // Обновление или создание записи в БД
-    const dbUser = await prisma.user.findUnique({
-      where: { telegramId: userId },
-    });
+    const dbUser = await getUserSafe(userId);
 
     if (dbUser) {
       await prisma.subscriptionCheck.upsert({
@@ -89,26 +88,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const dbUser = await prisma.user.findUnique({
-      where: { telegramId: (session.user as any).telegramId },
-      include: {
-        subscriptions: {
-          where: {
-            channelId: process.env.TELEGRAM_CHANNEL_ID,
-          },
-          orderBy: {
-            lastChecked: 'desc',
-          },
-          take: 1,
-        },
-      },
-    });
-
+    // Используем безопасный метод получения пользователя
+    const dbUser = await getUserSafe((session.user as any).telegramId);
+    
     if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const subscription = dbUser.subscriptions[0];
+    // Получаем подписки отдельно
+    const subscriptions = await prisma.subscriptionCheck.findMany({
+      where: {
+        userId: dbUser.id,
+        channelId: process.env.TELEGRAM_CHANNEL_ID,
+      },
+      orderBy: {
+        lastChecked: 'desc',
+      },
+      take: 1,
+    });
+    
+    const dbUserWithSubscriptions = {
+      ...dbUser,
+      subscriptions,
+    };
+
+    const subscription = dbUserWithSubscriptions.subscriptions[0];
     const isSubscribed = subscription?.isSubscribed ?? false;
 
     // Проверяем, не устарела ли проверка (24 часа)

@@ -7,6 +7,7 @@ import { generateImagePrompt } from '@/lib/ai/openai';
 import { generateImage } from '@/lib/ai/openrouter';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit-simple';
 import { generateImageSchema } from '@/lib/validation';
+import { getUserSafe } from '@/lib/user-safe';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,9 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Проверка подписки
-    const dbUser = await prisma.user.findUnique({
-      where: { telegramId: (session.user as any).telegramId },
-    });
+    const dbUser = await getUserSafe((session.user as any).telegramId);
 
     if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -239,9 +238,7 @@ export async function POST(request: NextRequest) {
     try {
       const session = await getServerSession(authOptions);
       if (session?.user) {
-        const dbUser = await prisma.user.findUnique({
-          where: { telegramId: (session.user as any).telegramId },
-        });
+        const dbUser = await getUserSafe((session.user as any).telegramId);
         
         if (dbUser) {
           // Пытаемся получить personName из body, но не блокируем если не получится

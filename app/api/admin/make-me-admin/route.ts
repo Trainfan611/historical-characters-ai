@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getUserSafe } from '@/lib/user-safe';
 
 /**
  * POST /api/admin/make-me-admin
@@ -23,19 +24,61 @@ export async function POST(request: NextRequest) {
     }
 
     // Находим пользователя
-    const user = await prisma.user.findUnique({
-      where: { telegramId },
-    });
+    const user = await getUserSafe(telegramId);
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Назначаем админом
-    const updated = await prisma.user.update({
-      where: { telegramId },
-      data: { isAdmin: true },
-    });
+    // Назначаем админом через raw query (на случай если колонка еще не создана)
+    try {
+      await prisma.$executeRaw`
+        ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isAdmin" BOOLEAN NOT NULL DEFAULT false;
+      `;
+    } catch (e) {
+      // Игнорируем ошибку, если колонка уже существует
+    }
+
+    try {
+      const updated = await prisma.user.update({
+        where: { telegramId },
+        data: { isAdmin: true },
+      });
+      
+      console.log(`[Admin] User ${telegramId} (${updated.firstName || updated.username}) is now admin`);
+
+      return NextResponse.json({
+        success: true,
+        message: 'Вы теперь админ!',
+        user: {
+          telegramId: updated.telegramId,
+          username: updated.username,
+          firstName: updated.firstName,
+          isAdmin: updated.isAdmin,
+        },
+      });
+    } catch (updateError: any) {
+      // Если update не работает, используем raw query
+      if (updateError?.message?.includes('isAdmin')) {
+        await prisma.$executeRaw`
+          UPDATE "User" SET "isAdmin" = true WHERE "telegramId" = ${telegramId};
+        `;
+        
+        const updatedUser = await getUserSafe(telegramId);
+        
+        return NextResponse.json({
+          success: true,
+          message: 'Вы теперь админ!',
+          user: {
+            telegramId: updatedUser?.telegramId,
+            username: updatedUser?.username,
+            firstName: updatedUser?.firstName,
+            isAdmin: true,
+          },
+        });
+      }
+      throw updateError;
+    }
 
     console.log(`[Admin] User ${telegramId} (${updated.firstName || updated.username}) is now admin`);
 

@@ -45,17 +45,48 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'activity'>('overview');
+  const [tokenValid, setTokenValid] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (status === 'loading') return;
+    // Проверяем токен из URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
 
-    if (status === 'unauthenticated') {
-      router.push('/login');
-      return;
+    if (token) {
+      // Проверяем токен
+      fetch(`/api/admin/access-token/verify?token=${token}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.valid && data.isAdmin) {
+            setTokenValid(true);
+          } else {
+            setTokenValid(false);
+            setError('Неверный или истекший токен доступа');
+          }
+        })
+        .catch(() => {
+          setTokenValid(false);
+          setError('Ошибка проверки токена');
+        });
+    } else {
+      // Если нет токена, проверяем обычную авторизацию
+      if (status === 'loading') return;
+
+      if (status === 'unauthenticated') {
+        setError('Требуется авторизация. Получите ссылку через Telegram бота командой /admin');
+        return;
+      }
+
+      // Проверяем админ-статус
+      fetchStats();
     }
-
-    fetchStats();
   }, [status, router]);
+
+  useEffect(() => {
+    if (tokenValid === true) {
+      fetchStats();
+    }
+  }, [tokenValid]);
 
   const fetchStats = async () => {
     try {
@@ -85,26 +116,25 @@ export default function AdminDashboard() {
     );
   }
 
-  if (error) {
-    const isAccessDenied = error.includes('нет прав доступа');
+  if (error || tokenValid === false) {
+    const isAccessDenied = error?.includes('нет прав доступа');
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center max-w-md">
-          <h1 className="text-2xl font-bold text-red-400 mb-4">Ошибка доступа</h1>
-          <p className="text-slate-300 mb-4">{error}</p>
-          {isAccessDenied && (
-            <div className="mb-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-              <p className="text-sm text-amber-200 mb-3">
-                Чтобы получить доступ к админ-панели, нужно назначить себя администратором.
-              </p>
-              <Link
-                href="/admin/setup"
-                className="inline-block px-6 py-2 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-lg transition-colors"
-              >
-                Назначить меня админом
-              </Link>
-            </div>
-          )}
+          <h1 className="text-2xl font-bold text-red-400 mb-4">Доступ запрещен</h1>
+          <p className="text-slate-300 mb-4">
+            {error || 'Для доступа к админ-панели используйте ссылку, полученную через Telegram бота командой /admin'}
+          </p>
+          <div className="mb-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+            <p className="text-sm text-amber-200 mb-2">
+              📱 <strong>Как получить доступ:</strong>
+            </p>
+            <ol className="text-sm text-amber-200 text-left list-decimal list-inside space-y-1">
+              <li>Откройте Telegram бота</li>
+              <li>Отправьте команду <code className="bg-amber-900/50 px-1 rounded">/admin</code></li>
+              <li>Используйте полученную ссылку</li>
+            </ol>
+          </div>
           <Link
             href="/"
             className="text-sky-400 hover:text-sky-300 underline text-sm"
@@ -130,12 +160,27 @@ export default function AdminDashboard() {
               <h1 className="text-2xl font-bold text-sky-400">Админ-панель</h1>
               <p className="text-sm text-slate-400 mt-1">Управление пользователями и статистика</p>
             </div>
-            <Link
-              href="/"
-              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
-            >
-              На главную
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                href="/"
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+              >
+                На главную
+              </Link>
+              <button
+                onClick={async () => {
+                  const response = await fetch('/api/admin/access-token', { method: 'POST' });
+                  const data = await response.json();
+                  if (data.success) {
+                    navigator.clipboard.writeText(data.url);
+                    alert('Ссылка скопирована в буфер обмена!');
+                  }
+                }}
+                className="px-4 py-2 bg-sky-600 hover:bg-sky-700 rounded-lg transition-colors text-sm"
+              >
+                Получить новую ссылку
+              </button>
+            </div>
           </div>
         </div>
       </header>

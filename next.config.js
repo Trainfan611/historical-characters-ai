@@ -6,7 +6,6 @@ const nextConfig = {
   
   // Оптимизация билда
   productionBrowserSourceMaps: false, // Ускоряет билд
-  swcMinify: true, // Используем SWC для минификации (быстрее)
   
   // Оптимизация компиляции
   compiler: {

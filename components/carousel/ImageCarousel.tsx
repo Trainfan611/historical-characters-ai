@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Image from 'next/image';
 
 interface CarouselImage {
@@ -37,26 +37,69 @@ export function ImageCarousel() {
   const [images, setImages] = useState<CarouselImage[]>(placeholderImages);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(3);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Загружаем реальные изображения из API
   useEffect(() => {
+    let isMounted = true;
+
     async function fetchImages() {
       try {
-        const response = await fetch('/api/generations/public?limit=5');
+        const response = await fetch('/api/generations/public?limit=5', {
+          cache: 'force-cache', // Кэшируем запрос
+        });
         if (response.ok) {
           const data = await response.json();
-          if (data.generations && data.generations.length > 0) {
+          if (isMounted && data.generations && data.generations.length > 0) {
             setImages(data.generations);
           }
         }
       } catch (error) {
         console.error('Error fetching carousel images:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     }
 
     fetchImages();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Оптимизированное определение видимого количества с debounce
+  useEffect(() => {
+    const updateVisibleCount = () => {
+      const width = window.innerWidth;
+      if (width < 640) {
+        setVisibleCount(1);
+      } else if (width < 1024) {
+        setVisibleCount(2);
+      } else {
+        setVisibleCount(3);
+      }
+    };
+
+    // Debounce для resize
+    const handleResize = () => {
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      resizeTimeoutRef.current = setTimeout(updateVisibleCount, 150);
+    };
+
+    updateVisibleCount();
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Автоматическая прокрутка слева направо
@@ -64,15 +107,29 @@ export function ImageCarousel() {
     if (images.length === 0) return;
 
     const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => {
-        // Плавно переходим к следующему изображению
-        const nextIndex = (prevIndex + 1) % images.length;
-        return nextIndex;
-      });
-    }, 3000); // Меняем изображение каждые 3 секунды
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [images.length]);
+
+  // Мемоизация дублированных изображений (только необходимое количество)
+  const duplicatedImages = useMemo(() => {
+    if (images.length === 0) return [];
+    // Дублируем только для бесшовной прокрутки (2 копии достаточно)
+    return [...images, ...images];
+  }, [images]);
+
+  // Мемоизация стилей для контейнера
+  const containerStyle = useMemo(() => ({
+    transform: `translateX(-${currentIndex * (100 / visibleCount)}%)`,
+    width: `${(duplicatedImages.length / visibleCount) * 100}%`,
+  }), [currentIndex, visibleCount, duplicatedImages.length]);
+
+  // Обработчик клика по индикатору
+  const handleIndicatorClick = useCallback((index: number) => {
+    setCurrentIndex(index);
+  }, []);
 
   if (isLoading) {
     return (
@@ -86,27 +143,6 @@ export function ImageCarousel() {
     return null;
   }
 
-  // Адаптивное количество видимых изображений
-  const [visibleCount, setVisibleCount] = useState(3);
-
-  useEffect(() => {
-    const updateVisibleCount = () => {
-      if (window.innerWidth < 640) {
-        setVisibleCount(1); // 1 изображение на мобильных
-      } else if (window.innerWidth < 1024) {
-        setVisibleCount(2); // 2 изображения на планшетах
-      } else {
-        setVisibleCount(3); // 3 изображения на десктопе
-      }
-    };
-
-    updateVisibleCount();
-    window.addEventListener('resize', updateVisibleCount);
-    return () => window.removeEventListener('resize', updateVisibleCount);
-  }, []);
-
-  const duplicatedImages = [...images, ...images, ...images]; // Для бесшовной прокрутки
-
   return (
     <div className="relative w-full overflow-hidden mt-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div 
@@ -118,63 +154,59 @@ export function ImageCarousel() {
         }}
       >
         <div
-          className="flex transition-transform duration-1000 ease-in-out absolute inset-0 h-full w-full"
-          style={{
-            transform: `translateX(-${currentIndex * (100 / visibleCount)}%)`,
-            width: `${(duplicatedImages.length / visibleCount) * 100}%`,
-          }}
+          className="flex transition-transform duration-1000 ease-in-out absolute inset-0 h-full w-full will-change-transform"
+          style={containerStyle}
         >
-          {duplicatedImages.map((image, index) => (
-            <div
-              key={`${image.id}-${index}`}
-              className="flex-shrink-0 h-full overflow-hidden"
-              style={{ 
-                width: `${100 / visibleCount}%`,
-                paddingLeft: index === 0 ? '0' : '0.375rem',
-                paddingRight: '0.375rem',
-              }}
-            >
-              <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-800/80 bg-slate-900 shadow-md flex items-center justify-center">
-                <Image
-                  src={image.url}
-                  alt={image.alt}
-                  fill
-                  className="!object-contain !object-center"
-                  style={{ 
-                    objectFit: 'contain',
-                    objectPosition: 'center',
-                    width: '100%',
-                    height: '100%',
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                  }}
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  unoptimized
-                  priority={index < visibleCount}
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/90 to-transparent p-2">
-                  <p className="text-xs text-slate-200 font-medium truncate">
-                    {image.alt}
-                  </p>
+          {duplicatedImages.map((image, index) => {
+            const isVisible = index >= currentIndex && index < currentIndex + visibleCount;
+            const isFirst = index === 0;
+            
+            return (
+              <div
+                key={`${image.id}-${index}`}
+                className="flex-shrink-0 h-full overflow-hidden"
+                style={{ 
+                  width: `${100 / visibleCount}%`,
+                  paddingLeft: isFirst ? '0' : '0.375rem',
+                  paddingRight: '0.375rem',
+                }}
+              >
+                <div className="relative w-full h-full rounded-lg overflow-hidden border border-slate-800/80 bg-slate-900 shadow-md flex items-center justify-center">
+                  <Image
+                    src={image.url}
+                    alt={image.alt || 'Историческая личность'}
+                    fill
+                    className="object-contain object-center"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    loading={isVisible ? 'eager' : 'lazy'}
+                    unoptimized
+                    priority={isVisible && index < visibleCount}
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/90 to-transparent p-2 pointer-events-none">
+                    <p className="text-xs text-slate-200 font-medium truncate">
+                      {image.alt || 'Историческая личность'}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       
       {/* Индикаторы */}
       <div className="flex justify-center gap-1.5 mt-2">
-        {images.slice(0, Math.min(images.length, 10)).map((_, index) => (
+        {images.map((_, index) => (
           <button
             key={index}
-            onClick={() => setCurrentIndex(index)}
-            className={`h-1.5 rounded-full transition-all ${
+            onClick={() => handleIndicatorClick(index)}
+            className={`h-1.5 rounded-full transition-all duration-300 ${
               index === currentIndex
                 ? 'w-6 bg-sky-400'
                 : 'w-1.5 bg-slate-600 hover:bg-slate-500'
             }`}
             aria-label={`Перейти к изображению ${index + 1}`}
+            type="button"
           />
         ))}
       </div>

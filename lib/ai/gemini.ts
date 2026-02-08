@@ -152,3 +152,95 @@ async function generateImagePromptWithOpenAI(
   const { generateImagePrompt: openAIGeneratePrompt } = await import('./openai');
   return await openAIGeneratePrompt(personInfo, style);
 }
+
+/**
+ * Генерация изображения через Gemini 2.5 Flash Image (Imagen API)
+ * Документация: https://ai.google.dev/api?hl=ru
+ */
+export async function generateImageWithGemini(prompt: string): Promise<string> {
+  if (!GEMINI_API_KEY) {
+    console.error('[Gemini 2.5 Flash Image] GEMINI_API_KEY is not set in environment variables');
+    throw new Error('GEMINI_API_KEY is not set. Please configure Gemini API key in Railway Variables. Get your key at https://ai.google.dev/');
+  }
+
+  try {
+    console.log('[Gemini 2.5 Flash Image] Starting image generation with prompt:', prompt.substring(0, 100));
+    console.log('[Gemini 2.5 Flash Image] API key length:', GEMINI_API_KEY?.length || 0);
+
+    const token = GEMINI_API_KEY?.trim();
+    if (!token || token.length < 10) {
+      throw new Error('GEMINI_API_KEY appears to be invalid (too short or empty)');
+    }
+
+    // Используем Imagen 3 API для генерации изображений
+    // Endpoint: https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict
+    const imagenUrl = 'https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict';
+    
+    console.log('[Gemini 2.5 Flash Image] Creating image generation request...');
+    
+    const response = await axios.post(
+      imagenUrl,
+      {
+        prompt: prompt,
+        number_of_images: 1,
+        aspect_ratio: '1:1',
+        safety_filter_level: 'block_some',
+        person_generation: 'allow_all',
+      },
+      {
+        headers: {
+          'x-goog-api-key': token,
+          'Content-Type': 'application/json',
+        },
+        timeout: 60000, // 60 секунд для генерации изображения
+      }
+    );
+
+    // Проверяем ответ
+    const imageData = response.data?.generatedImages?.[0]?.imageBytes;
+    const imageUrl = response.data?.generatedImages?.[0]?.imageUrl;
+
+    if (imageUrl) {
+      console.log('[Gemini 2.5 Flash Image] ✓ Generation succeeded, image URL:', imageUrl);
+      return imageUrl;
+    }
+
+    if (imageData) {
+      // Если вернулись байты изображения, нужно сохранить их и вернуть URL
+      // Для простоты, если есть imageUrl, используем его
+      throw new Error('Image data returned but no URL provided');
+    }
+
+    throw new Error('Gemini 2.5 Flash Image API did not return image URL or data');
+  } catch (error: any) {
+    const errorStatus = error.response?.status;
+    const errorData = error.response?.data;
+    
+    console.error('[Gemini 2.5 Flash Image] ✗ Error generating image:', {
+      message: error.message,
+      status: errorStatus,
+      statusText: error.response?.statusText,
+      responseData: errorData,
+    });
+
+    // Обработка различных типов ошибок
+    if (errorStatus === 401 || errorStatus === 403 || error.message?.includes('access') || error.message?.includes('permission')) {
+      const errorMsg = error.message?.includes('access') || error.message?.includes('permission') 
+        ? error.message 
+        : 'GEMINI_API_KEY is invalid or expired';
+      throw new Error(`${errorMsg}. Please check your API key at https://ai.google.dev/`);
+    }
+
+    if (errorStatus === 429) {
+      throw new Error('Gemini 2.5 Flash Image API rate limit exceeded. Please try again later.');
+    }
+
+    if (errorStatus === 400) {
+      const errorMessage = errorData?.error?.message || errorData?.message || error.message;
+      throw new Error(`Invalid request to Gemini 2.5 Flash Image API: ${errorMessage}`);
+    }
+
+    // Пробрасываем ошибку дальше для fallback на Replicate
+    throw new Error(`Failed to generate image with Gemini 2.5 Flash Image: ${error.message}`);
+  }
+}

@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { searchHistoricalPerson } from '@/lib/ai/perplexity';
 import { generateImagePrompt } from '@/lib/ai/gemini';
-import { generateImageWithNanoBanana } from '@/lib/ai/nano-banana';
+import { generateImageWithGemini } from '@/lib/ai/gemini';
 import { generateImage } from '@/lib/ai/openrouter';
 import { generateImageWithOpenAI } from '@/lib/ai/openai-image';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit-simple';
@@ -196,27 +196,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Генерация изображения
-    // Используем Nano Banana для генерации изображений
+    // Используем Gemini 2.5 Flash Image для генерации изображений
     console.log('[Generate] ===== Starting image generation =====');
-    console.log('[Generate] Attempting to generate image using Nano Banana...');
+    console.log('[Generate] Attempting to generate image using Gemini 2.5 Flash Image...');
     let imageUrl: string;
     let imageSource = 'unknown';
     
     try {
-      imageUrl = await generateImageWithNanoBanana(prompt);
-      imageSource = 'Nano Banana';
-      console.log('[Generate] ✓ Image generated successfully with Nano Banana');
+      imageUrl = await generateImageWithGemini(prompt);
+      imageSource = 'Gemini 2.5 Flash Image';
+      console.log('[Generate] ✓ Image generated successfully with Gemini 2.5 Flash Image');
       console.log('[Generate] Image URL:', imageUrl);
     } catch (error: any) {
       // ВАЖНО: Логируем ошибку сразу
-      console.error('[Generate] ✗ Nano Banana failed with error:', {
+      console.error('[Generate] ✗ Gemini 2.5 Flash Image failed with error:', {
         message: error.message,
         status: error.response?.status,
         code: error.code,
         stack: error.stack?.substring(0, 200), // Первые 200 символов стека для отладки
       });
       
-      // Fallback: если Nano Banana не сработал, пробуем Replicate
+      // Fallback: если Gemini 2.5 Flash Image не сработал, пробуем Replicate
       console.log('[Generate] ===== FALLBACK: Attempting to use Replicate =====');
       console.log('[Generate] Step 1: Checking if REPLICATE_API_KEY is available...');
       
@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { 
             error: 'Failed to generate image',
-            details: `Nano Banana failed: ${error.message}. Replicate fallback unavailable: REPLICATE_API_KEY not set. Please add REPLICATE_API_KEY to Railway environment variables.`
+            details: `Gemini 2.5 Flash Image failed: ${error.message}. Replicate fallback unavailable: REPLICATE_API_KEY not set. Please add REPLICATE_API_KEY to Railway environment variables.`
           },
           { status: 500 }
         );
@@ -251,7 +251,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { 
             error: 'Failed to generate image',
-            details: `Nano Banana failed: ${error.message}. Replicate fallback also failed: ${fallbackError.message}. Please check REPLICATE_API_KEY.`
+            details: `Gemini 2.5 Flash Image failed: ${error.message}. Replicate fallback also failed: ${fallbackError.message}. Please check REPLICATE_API_KEY.`
           },
           { status: 500 }
         );

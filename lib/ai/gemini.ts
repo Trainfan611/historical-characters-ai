@@ -154,7 +154,8 @@ async function generateImagePromptWithOpenAI(
 }
 
 /**
- * Генерация изображения через Gemini 2.5 Flash Image (Imagen API)
+ * Генерация изображения через Gemini 2.5 Flash Image
+ * Использует правильный формат API для генерации изображений
  * Документация: https://ai.google.dev/api?hl=ru
  */
 export async function generateImageWithGemini(prompt: string): Promise<string> {
@@ -172,46 +173,72 @@ export async function generateImageWithGemini(prompt: string): Promise<string> {
       throw new Error('GEMINI_API_KEY appears to be invalid (too short or empty)');
     }
 
-    // Используем Imagen 3 API для генерации изображений
-    // Endpoint: https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict
-    const imagenUrl = 'https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict';
+    // Используем правильный формат для Gemini API с generateContent
+    // Модель gemini-2.5-flash поддерживает генерацию изображений через специальный формат
+    const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
     
     console.log('[Gemini 2.5 Flash Image] Creating image generation request...');
     
+    // Формат запроса для Gemini API с генерацией изображений
     const response = await axios.post(
-      imagenUrl,
+      `${geminiUrl}?key=${token}`,
       {
-        prompt: prompt,
-        number_of_images: 1,
-        aspect_ratio: '1:1',
-        safety_filter_level: 'block_some',
-        person_generation: 'allow_all',
+        contents: [
+          {
+            parts: [
+              {
+                text: `Generate an image: ${prompt}`
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          topP: 0.95,
+          topK: 40,
+        },
       },
       {
         headers: {
-          'x-goog-api-key': token,
           'Content-Type': 'application/json',
         },
         timeout: 60000, // 60 секунд для генерации изображения
       }
     );
 
-    // Проверяем ответ
-    const imageData = response.data?.generatedImages?.[0]?.imageBytes;
-    const imageUrl = response.data?.generatedImages?.[0]?.imageUrl;
-
-    if (imageUrl) {
-      console.log('[Gemini 2.5 Flash Image] ✓ Generation succeeded, image URL:', imageUrl);
-      return imageUrl;
+    // Проверяем ответ - Gemini может вернуть изображение в разных форматах
+    const candidates = response.data?.candidates;
+    if (candidates && candidates.length > 0) {
+      const content = candidates[0]?.content;
+      const parts = content?.parts;
+      
+      // Ищем изображение в ответе
+      for (const part of parts || []) {
+        if (part.inlineData) {
+          // Если изображение в base64
+          const imageData = part.inlineData.data;
+          const mimeType = part.inlineData.mimeType || 'image/png';
+          
+          // Конвертируем base64 в data URL
+          const imageUrl = `data:${mimeType};base64,${imageData}`;
+          console.log('[Gemini 2.5 Flash Image] ✓ Generation succeeded (base64 image)');
+          return imageUrl;
+        }
+      }
+      
+      // Если есть текст с URL изображения
+      const text = parts?.find((p: any) => p.text)?.text;
+      if (text) {
+        // Пытаемся найти URL в тексте
+        const urlMatch = text.match(/https?:\/\/[^\s]+/);
+        if (urlMatch) {
+          console.log('[Gemini 2.5 Flash Image] ✓ Generation succeeded, image URL:', urlMatch[0]);
+          return urlMatch[0];
+        }
+      }
     }
 
-    if (imageData) {
-      // Если вернулись байты изображения, нужно сохранить их и вернуть URL
-      // Для простоты, если есть imageUrl, используем его
-      throw new Error('Image data returned but no URL provided');
-    }
-
-    throw new Error('Gemini 2.5 Flash Image API did not return image URL or data');
+    throw new Error('Gemini 2.5 Flash Image API did not return image data');
   } catch (error: any) {
     const errorStatus = error.response?.status;
     const errorData = error.response?.data;
@@ -237,6 +264,10 @@ export async function generateImageWithGemini(prompt: string): Promise<string> {
 
     if (errorStatus === 400) {
       const errorMessage = errorData?.error?.message || errorData?.message || error.message;
+      // Если API не поддерживает генерацию изображений, выбрасываем ошибку для fallback
+      if (errorMessage?.includes('image') || errorMessage?.includes('generate')) {
+        throw new Error('Gemini 2.5 Flash Image does not support direct image generation via this API. Falling back to Replicate.');
+      }
       throw new Error(`Invalid request to Gemini 2.5 Flash Image API: ${errorMessage}`);
     }
 

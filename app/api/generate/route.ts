@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { searchHistoricalPerson } from '@/lib/ai/perplexity';
 import { generateImagePrompt } from '@/lib/ai/gemini';
 import { generateImageWithGemini } from '@/lib/ai/gemini';
+import { generateImage } from '@/lib/ai/openrouter';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit-simple';
 import { generateImageSchema } from '@/lib/validation';
 import { getUserSafe } from '@/lib/user-safe';
@@ -194,9 +195,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Генерация изображения
-    // Используем ТОЛЬКО Gemini 2.5 Flash Image для генерации изображений
+    // Используем Gemini 2.5 Flash Image с fallback на Replicate
     console.log('[Generate] ===== Starting image generation =====');
-    console.log('[Generate] Generating image using Gemini 2.5 Flash Image (Nano Banana)...');
+    console.log('[Generate] Attempting to generate image using Gemini 2.5 Flash Image...');
     
     let imageUrl: string;
     let imageSource = 'Gemini 2.5 Flash Image';
@@ -211,17 +212,43 @@ export async function POST(request: NextRequest) {
         message: error.message,
         status: error.response?.status,
         code: error.code,
-        stack: error.stack?.substring(0, 200),
       });
       
-      // Возвращаем ошибку без fallback - используем только Gemini
-      return NextResponse.json(
-        { 
-          error: 'Failed to generate image',
-          details: `Gemini 2.5 Flash Image failed: ${error.message}. Please check GEMINI_API_KEY and ensure it has access to image generation models.`
-        },
-        { status: 500 }
-      );
+      // Fallback: если Gemini не сработал, пробуем Replicate
+      console.log('[Generate] ===== Attempting fallback to Replicate =====');
+      console.log('[Generate] Step 1: Checking if REPLICATE_API_KEY is available...');
+      
+      if (!process.env.REPLICATE_API_KEY) {
+        console.error('[Generate] ✗ REPLICATE_API_KEY is not set! Cannot use fallback.');
+        return NextResponse.json(
+          { 
+            error: 'Failed to generate image',
+            details: `Gemini 2.5 Flash Image failed: ${error.message}. Replicate fallback unavailable: REPLICATE_API_KEY not set.`
+          },
+          { status: 500 }
+        );
+      }
+      
+      console.log('[Generate] REPLICATE_API_KEY found, attempting Replicate generation...');
+      try {
+        imageUrl = await generateImage(prompt);
+        imageSource = 'Replicate (fallback)';
+        console.log('[Generate] ✓ Fallback to Replicate successful!');
+        console.log('[Generate] Image URL:', imageUrl);
+      } catch (fallbackError: any) {
+        console.error('[Generate] ✗ Fallback to Replicate also failed:', {
+          message: fallbackError.message,
+          status: fallbackError.response?.status,
+          code: fallbackError.code,
+        });
+        return NextResponse.json(
+          { 
+            error: 'Failed to generate image',
+            details: `Gemini 2.5 Flash Image failed: ${error.message}. Replicate fallback also failed: ${fallbackError.message}`
+          },
+          { status: 500 }
+        );
+      }
     }
     
     console.log(`[Generate] ===== Image generation completed using ${imageSource} =====`);

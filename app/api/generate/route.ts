@@ -5,8 +5,6 @@ import { prisma } from '@/lib/db';
 import { searchHistoricalPerson } from '@/lib/ai/perplexity';
 import { generateImagePrompt } from '@/lib/ai/gemini';
 import { generateImageWithGemini } from '@/lib/ai/gemini';
-import { generateImage } from '@/lib/ai/openrouter';
-import { generateImageWithOpenAI } from '@/lib/ai/openai-image';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit-simple';
 import { generateImageSchema } from '@/lib/validation';
 import { getUserSafe } from '@/lib/user-safe';
@@ -196,66 +194,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Генерация изображения
-    // Используем Gemini 2.5 Flash Image для генерации изображений
+    // Используем ТОЛЬКО Gemini 2.5 Flash Image для генерации изображений
     console.log('[Generate] ===== Starting image generation =====');
-    console.log('[Generate] Attempting to generate image using Gemini 2.5 Flash Image...');
+    console.log('[Generate] Generating image using Gemini 2.5 Flash Image (Nano Banana)...');
+    
     let imageUrl: string;
-    let imageSource = 'unknown';
+    let imageSource = 'Gemini 2.5 Flash Image';
     
     try {
       imageUrl = await generateImageWithGemini(prompt);
-      imageSource = 'Gemini 2.5 Flash Image';
       console.log('[Generate] ✓ Image generated successfully with Gemini 2.5 Flash Image');
-      console.log('[Generate] Image URL:', imageUrl);
+      console.log('[Generate] Image URL:', imageUrl.substring(0, 100) + '...');
     } catch (error: any) {
-      // ВАЖНО: Логируем ошибку сразу
+      // Логируем ошибку
       console.error('[Generate] ✗ Gemini 2.5 Flash Image failed with error:', {
         message: error.message,
         status: error.response?.status,
         code: error.code,
-        stack: error.stack?.substring(0, 200), // Первые 200 символов стека для отладки
+        stack: error.stack?.substring(0, 200),
       });
       
-      // Fallback: если Gemini 2.5 Flash Image не сработал, пробуем Replicate
-      console.log('[Generate] ===== FALLBACK: Attempting to use Replicate =====');
-      console.log('[Generate] Step 1: Checking if REPLICATE_API_KEY is available...');
-      
-      const replicateKey = process.env.REPLICATE_API_KEY;
-      console.log('[Generate] REPLICATE_API_KEY exists:', !!replicateKey);
-      console.log('[Generate] REPLICATE_API_KEY length:', replicateKey?.length || 0);
-      
-      if (!replicateKey) {
-        console.error('[Generate] ✗ CRITICAL: REPLICATE_API_KEY is not set! Cannot use fallback.');
-        return NextResponse.json(
-          { 
-            error: 'Failed to generate image',
-            details: `Gemini 2.5 Flash Image failed: ${error.message}. Replicate fallback unavailable: REPLICATE_API_KEY not set. Please add REPLICATE_API_KEY to Railway environment variables.`
-          },
-          { status: 500 }
-        );
-      }
-      
-      console.log('[Generate] Step 2: REPLICATE_API_KEY found, attempting Replicate generation...');
-      try {
-        imageUrl = await generateImage(prompt);
-        imageSource = 'Replicate (fallback)';
-        console.log('[Generate] ✓✓✓ Fallback to Replicate SUCCESSFUL! ✓✓✓');
-        console.log('[Generate] Image URL:', imageUrl);
-      } catch (fallbackError: any) {
-        console.error('[Generate] ✗✗✗ Fallback to Replicate ALSO FAILED ✗✗✗:', {
-          message: fallbackError.message,
-          status: fallbackError.response?.status,
-          code: fallbackError.code,
-          stack: fallbackError.stack?.substring(0, 200),
-        });
-        return NextResponse.json(
-          { 
-            error: 'Failed to generate image',
-            details: `Gemini 2.5 Flash Image failed: ${error.message}. Replicate fallback also failed: ${fallbackError.message}. Please check REPLICATE_API_KEY.`
-          },
-          { status: 500 }
-        );
-      }
+      // Возвращаем ошибку без fallback - используем только Gemini
+      return NextResponse.json(
+        { 
+          error: 'Failed to generate image',
+          details: `Gemini 2.5 Flash Image failed: ${error.message}. Please check GEMINI_API_KEY and ensure it has access to image generation models.`
+        },
+        { status: 500 }
+      );
     }
     
     console.log(`[Generate] ===== Image generation completed using ${imageSource} =====`);

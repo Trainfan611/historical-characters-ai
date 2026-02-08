@@ -2,6 +2,8 @@ import axios from 'axios';
 import { PersonInfo } from './perplexity';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// Отдельный ключ для генерации изображений (Nano Banana / Gemini Image API)
+const NANO_BANANA_API_KEY = process.env.NANO_BANANA_API_KEY || process.env.GEMINI_API_KEY; // Fallback на GEMINI_API_KEY если NANO_BANANA_API_KEY не установлен
 // Согласно официальной документации: https://ai.google.dev/api?hl=ru
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
@@ -160,16 +162,20 @@ async function generateImagePromptWithOpenAI(
  * Пример: https://github.com/google-gemini/gemini-image-editing-nextjs-quickstart
  */
 export async function generateImageWithGemini(prompt: string): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    console.error('[Gemini 2.5 Flash Image] GEMINI_API_KEY is not set in environment variables');
-    throw new Error('GEMINI_API_KEY is not set. Please configure Gemini API key in Railway Variables. Get your key at https://ai.google.dev/');
+  // Используем NANO_BANANA_API_KEY если установлен, иначе fallback на GEMINI_API_KEY
+  const apiKey = NANO_BANANA_API_KEY || GEMINI_API_KEY;
+  const keyName = NANO_BANANA_API_KEY ? 'NANO_BANANA_API_KEY' : 'GEMINI_API_KEY';
+  
+  if (!apiKey) {
+    console.error('[Gemini 2.5 Flash Image] Neither NANO_BANANA_API_KEY nor GEMINI_API_KEY is set in environment variables');
+    throw new Error('NANO_BANANA_API_KEY or GEMINI_API_KEY is not set. Please configure Nano Banana/Gemini API key in Railway Variables. Get your key at https://ai.google.dev/ or https://nanobananaapi.ai/');
   }
 
   try {
     console.log('[Gemini 2.5 Flash Image] Starting image generation with prompt:', prompt.substring(0, 100));
-    console.log('[Gemini 2.5 Flash Image] API key length:', GEMINI_API_KEY?.length || 0);
+    console.log(`[Gemini 2.5 Flash Image] Using ${keyName}, API key length:`, apiKey?.length || 0);
 
-    const token = GEMINI_API_KEY?.trim();
+    const token = apiKey?.trim();
     if (!token || token.length < 10) {
       throw new Error('GEMINI_API_KEY appears to be invalid (too short or empty)');
     }
@@ -263,8 +269,8 @@ export async function generateImageWithGemini(prompt: string): Promise<string> {
     if (errorStatus === 401 || errorStatus === 403 || error.message?.includes('access') || error.message?.includes('permission')) {
       const errorMsg = error.message?.includes('access') || error.message?.includes('permission') 
         ? error.message 
-        : 'GEMINI_API_KEY is invalid or expired';
-      throw new Error(`${errorMsg}. Please check your API key at https://ai.google.dev/`);
+        : `${keyName} is invalid or expired`;
+      throw new Error(`${errorMsg}. Please check your API key at https://ai.google.dev/ or https://nanobananaapi.ai/`);
     }
 
     if (errorStatus === 429) {

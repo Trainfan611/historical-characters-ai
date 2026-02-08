@@ -69,9 +69,10 @@ export async function GET(request: NextRequest) {
       console.log('[Test APIs] Gemini key not set');
     }
 
-    // Проверка Gemini 2.5 Flash Image
-    console.log('[Test APIs] Testing Gemini 2.5 Flash Image...');
-    if (process.env.GEMINI_API_KEY) {
+    // Проверка Gemini 2.5 Flash Image (Nano Banana)
+    console.log('[Test APIs] Testing Gemini 2.5 Flash Image (Nano Banana)...');
+    const nanoBananaKey = process.env.NANO_BANANA_API_KEY || process.env.GEMINI_API_KEY;
+    if (nanoBananaKey) {
       try {
         const { generateImageWithGemini } = await import('@/lib/ai/gemini');
         // Не генерируем реальное изображение, только проверяем доступность API
@@ -79,6 +80,7 @@ export async function GET(request: NextRequest) {
         
         // Пробуем создать запрос (но не ждем завершения генерации)
         const axios = (await import('axios')).default;
+        const testKey = process.env.NANO_BANANA_API_KEY || process.env.GEMINI_API_KEY;
         const response = await axios.post(
           'https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict',
           {
@@ -88,7 +90,7 @@ export async function GET(request: NextRequest) {
           },
           {
             headers: {
-              'x-goog-api-key': process.env.GEMINI_API_KEY,
+              'x-goog-api-key': testKey,
               'Content-Type': 'application/json',
             },
             timeout: 10000,
@@ -135,14 +137,14 @@ export async function GET(request: NextRequest) {
           console.log('[Test APIs] ✗ Gemini 2.5 Flash Image failed:', error.message);
         }
       }
-    } else {
-      results.geminiImage = {
-        available: false,
-        error: 'GEMINI_API_KEY not set',
-        details: { willUseFallback: true },
-      };
-      console.log('[Test APIs] Gemini 2.5 Flash Image key not set');
-    }
+      } else {
+        results.geminiImage = {
+          available: false,
+          error: 'NANO_BANANA_API_KEY or GEMINI_API_KEY not set',
+          details: { willUseFallback: true },
+        };
+        console.log('[Test APIs] Gemini 2.5 Flash Image key not set');
+      }
 
     // Проверка OpenAI (fallback для промптов)
     console.log('[Test APIs] Testing OpenAI (fallback for prompts)...');
@@ -224,7 +226,7 @@ function generateRecommendations(
   }
 
   if (!results.geminiImage.available && results.replicate.available) {
-    recommendations.push('💡 Optional: Configure GEMINI_API_KEY for Gemini 2.5 Flash Image generation');
+    recommendations.push('💡 Optional: Configure NANO_BANANA_API_KEY (or GEMINI_API_KEY) for Gemini 2.5 Flash Image generation');
   }
 
   if (systemStatus.isFullyOperational) {

@@ -33,7 +33,8 @@ export async function generateImageWithOpenAI(prompt: string): Promise<string> {
         n: 1,
         size: '1024x1024',
         quality: 'standard',
-        response_format: 'url', // 'url' или 'b64_json'
+        // Не указываем response_format: для gpt-image-1 параметр может быть не поддержан,
+        // по умолчанию API возвращает URL
       },
       {
         headers: {

@@ -195,20 +195,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Генерация изображения
-    // Приоритет: OpenAI DALL-E 3 → Replicate (Flux) как fallback
+    // Приоритет: OpenAI gpt-image-1 → Replicate (Flux) как fallback
     console.log('[Generate] ===== Starting image generation =====');
-    console.log('[Generate] Attempting to generate image using OpenAI DALL-E 3...');
+    console.log('[Generate] Attempting to generate image using OpenAI gpt-image-1...');
     
     let imageUrl: string;
-    let imageSource = 'OpenAI DALL-E 3';
+    let imageSource = 'OpenAI gpt-image-1';
     
     try {
       imageUrl = await generateImageWithOpenAI(prompt);
-      console.log('[Generate] ✓ Image generated successfully with OpenAI DALL-E 3');
+      console.log('[Generate] ✓ Image generated successfully with OpenAI gpt-image-1');
       console.log('[Generate] Image URL:', imageUrl.substring(0, 200) + '...');
     } catch (error: any) {
       // Логируем ошибку OpenAI
-      console.error('[Generate] ✗ OpenAI DALL-E 3 failed with error:', {
+      console.error('[Generate] ✗ OpenAI gpt-image-1 failed with error:', {
         message: error.message,
         status: error.response?.status,
         code: error.code,
@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { 
             error: 'Failed to generate image',
-            details: `OpenAI DALL-E 3 failed: ${error.message}. Replicate fallback unavailable: REPLICATE_API_KEY not set.`
+            details: `OpenAI gpt-image-1 failed: ${error.message}. Replicate fallback unavailable: REPLICATE_API_KEY not set.`
           },
           { status: 500 }
         );
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { 
             error: 'Failed to generate image',
-            details: `OpenAI DALL-E 3 failed: ${error.message}. Replicate fallback also failed: ${fallbackError.message}`
+            details: `OpenAI gpt-image-1 failed: ${error.message}. Replicate fallback also failed: ${fallbackError.message}`
           },
           { status: 500 }
         );

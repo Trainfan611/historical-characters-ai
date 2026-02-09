@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { searchHistoricalPerson } from '@/lib/ai/perplexity';
 import { generateImagePrompt } from '@/lib/ai/gemini';
-import { generateImageWithGemini } from '@/lib/ai/gemini';
+import { generateImageWithOpenAI } from '@/lib/ai/openai-image';
 import { generateImage } from '@/lib/ai/openrouter';
 import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit-simple';
 import { generateImageSchema } from '@/lib/validation';
@@ -195,27 +195,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Генерация изображения
-    // Используем Gemini 2.5 Flash Image с fallback на Replicate
+    // Приоритет: OpenAI DALL-E 3 → Replicate (Flux) как fallback
     console.log('[Generate] ===== Starting image generation =====');
-    console.log('[Generate] Attempting to generate image using Gemini 2.5 Flash Image...');
+    console.log('[Generate] Attempting to generate image using OpenAI DALL-E 3...');
     
     let imageUrl: string;
-    let imageSource = 'Gemini 2.5 Flash Image';
+    let imageSource = 'OpenAI DALL-E 3';
     
     try {
-      imageUrl = await generateImageWithGemini(prompt);
-      console.log('[Generate] ✓ Image generated successfully with Gemini 2.5 Flash Image');
-      console.log('[Generate] Image URL:', imageUrl.substring(0, 100) + '...');
+      imageUrl = await generateImageWithOpenAI(prompt);
+      console.log('[Generate] ✓ Image generated successfully with OpenAI DALL-E 3');
+      console.log('[Generate] Image URL:', imageUrl.substring(0, 200) + '...');
     } catch (error: any) {
-      // Логируем ошибку
-      console.error('[Generate] ✗ Gemini 2.5 Flash Image failed with error:', {
+      // Логируем ошибку OpenAI
+      console.error('[Generate] ✗ OpenAI DALL-E 3 failed with error:', {
         message: error.message,
         status: error.response?.status,
         code: error.code,
       });
       
-      // Fallback: если Gemini не сработал, пробуем Replicate
-      console.log('[Generate] ===== Attempting fallback to Replicate =====');
+      // Fallback: если OpenAI не сработал, пробуем Replicate
+      console.log('[Generate] ===== Attempting fallback to Replicate (Flux) =====');
       console.log('[Generate] Step 1: Checking if REPLICATE_API_KEY is available...');
       
       if (!process.env.REPLICATE_API_KEY) {
@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { 
             error: 'Failed to generate image',
-            details: `Gemini 2.5 Flash Image failed: ${error.message}. Replicate fallback unavailable: REPLICATE_API_KEY not set.`
+            details: `OpenAI DALL-E 3 failed: ${error.message}. Replicate fallback unavailable: REPLICATE_API_KEY not set.`
           },
           { status: 500 }
         );
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { 
             error: 'Failed to generate image',
-            details: `Gemini 2.5 Flash Image failed: ${error.message}. Replicate fallback also failed: ${fallbackError.message}`
+            details: `OpenAI DALL-E 3 failed: ${error.message}. Replicate fallback also failed: ${fallbackError.message}`
           },
           { status: 500 }
         );

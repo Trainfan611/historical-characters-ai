@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { ImageCarousel } from '@/components/carousel/ImageCarousel';
+// import { ImageCarousel } from '@/components/carousel/ImageCarousel';
 
 const popularPersons = [
   'Наполеон Бонапарт',
@@ -19,10 +19,10 @@ export default function Home() {
         {/* Центрированный блок как на BookVision */}
         <section className="w-full flex-1 flex items-center justify-center px-4 py-10">
           <div className="w-full max-w-xl text-center space-y-8">
-            {/* Карусель с изображениями */}
-            <div className="w-full max-w-4xl mx-auto -mt-4">
+            {/* Карусель с изображениями — временно отключена */}
+            {/* <div className="w-full max-w-4xl mx-auto -mt-4">
               <ImageCarousel />
-            </div>
+            </div> */}
 
             <div className="flex items-center justify-center gap-2 text-sm text-sky-300">
               <span className="text-lg">✦</span>

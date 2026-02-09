@@ -21,16 +21,18 @@ export async function generateImageWithOpenAI(prompt: string): Promise<string> {
       throw new Error('OPENAI_API_KEY appears to be invalid (too short or empty)');
     }
 
-    // Используем DALL-E 3 для генерации изображений (gpt-image-1-mini не существует)
-    // Модель gpt-image-1-mini не поддерживается OpenAI API, используем проверенную DALL-E 3
+    // Используем gpt-image-1 с «средними» настройками
+    // - модель: gpt-image-1 (новая линейка GPT Image)
+    // - размер: 1024x1024 (средний)
+    // - качество: standard (дешевле, чем hd)
     const response = await axios.post(
       OPENAI_IMAGE_API_URL,
       {
-        model: 'dall-e-3',
+        model: 'gpt-image-1',
         prompt: prompt,
         n: 1,
         size: '1024x1024',
-        quality: 'hd', // HD качество для лучших результатов
+        quality: 'standard',
         response_format: 'url', // 'url' или 'b64_json'
       },
       {
@@ -41,7 +43,7 @@ export async function generateImageWithOpenAI(prompt: string): Promise<string> {
         timeout: 60000, // 60 секунд для генерации
       }
     );
-    console.log('[OpenAI Image] Successfully used dall-e-3 model with HD quality');
+    console.log('[OpenAI Image] Successfully used gpt-image-1 model with standard quality');
 
     const imageUrl = response.data.data?.[0]?.url;
     if (!imageUrl) {

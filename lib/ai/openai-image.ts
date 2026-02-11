@@ -24,7 +24,7 @@ export async function generateImageWithOpenAI(prompt: string): Promise<string> {
     // Используем gpt-image-1 с «средними» настройками
     // - модель: gpt-image-1 (новая линейка GPT Image)
     // - размер: 1024x1024 (средний)
-    // - качество: standard (дешевле, чем hd)
+    // - качество: medium (среднее качество, как просили)
     const response = await axios.post(
       OPENAI_IMAGE_API_URL,
       {
@@ -32,7 +32,7 @@ export async function generateImageWithOpenAI(prompt: string): Promise<string> {
         prompt: prompt,
         n: 1,
         size: '1024x1024',
-        quality: 'standard',
+        quality: 'medium',
         // Не указываем response_format: для gpt-image-1 параметр может быть не поддержан,
         // по умолчанию API возвращает URL
       },

@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import axios from 'axios';
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN_BASE;
 const TELEGRAM_API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
 export interface TelegramAuthData {
@@ -19,7 +19,7 @@ export interface TelegramAuthData {
  */
 export function verifyTelegramData(data: TelegramAuthData): boolean {
   if (!BOT_TOKEN) {
-    throw new Error('TELEGRAM_BOT_TOKEN is not set');
+    throw new Error('TELEGRAM_BOT_TOKEN_BASE is not set');
   }
 
   const { hash, ...userData } = data;
@@ -49,7 +49,7 @@ export async function checkChannelSubscription(
   channelId: string
 ): Promise<boolean> {
   if (!BOT_TOKEN) {
-    throw new Error('TELEGRAM_BOT_TOKEN is not set');
+    throw new Error('TELEGRAM_BOT_TOKEN_BASE is not set');
   }
 
   try {
@@ -86,7 +86,7 @@ export async function checkChannelSubscription(
  */
 export async function getTelegramUser(userId: string) {
   if (!BOT_TOKEN) {
-    throw new Error('TELEGRAM_BOT_TOKEN is not set');
+    throw new Error('TELEGRAM_BOT_TOKEN_BASE is not set');
   }
 
   try {

@@ -22,16 +22,26 @@ export const authOptions: NextAuthOptions = {
         }
 
         console.log('[Auth] Telegram credentials received for id:', credentials.id);
+        console.log('[Auth] Received credentials:', {
+          id: credentials.id,
+          hasHash: !!credentials.hash,
+          hasUsername: !!credentials.username,
+          hasFirstName: !!credentials.first_name,
+          hasLastName: !!credentials.last_name,
+          hasPhotoUrl: !!credentials.photo_url,
+          hasAuthDate: !!credentials.auth_date,
+        });
 
         // Верификация данных Telegram
+        // Не передаем пустые строки - только реальные значения
         const telegramData: TelegramAuthData = {
           id: credentials.id,
           hash: credentials.hash,
-          username: credentials.username,
-          first_name: credentials.first_name,
-          last_name: credentials.last_name,
-          photo_url: credentials.photo_url,
+          first_name: credentials.first_name || '',
           auth_date: credentials.auth_date,
+          ...(credentials.username && { username: credentials.username }),
+          ...(credentials.last_name && { last_name: credentials.last_name }),
+          ...(credentials.photo_url && { photo_url: credentials.photo_url }),
         };
 
         // TODO: в продакшене обязательно включите строгую проверку подписи Telegram.

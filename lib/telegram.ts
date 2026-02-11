@@ -24,9 +24,18 @@ export function verifyTelegramData(data: TelegramAuthData): boolean {
   }
 
   const { hash, ...userData } = data;
-  const dataCheckString = Object.keys(userData)
+  
+  // Фильтруем undefined/null значения перед созданием строки проверки
+  const filteredUserData: Record<string, string> = {};
+  for (const [key, value] of Object.entries(userData)) {
+    if (value !== undefined && value !== null && value !== '') {
+      filteredUserData[key] = String(value);
+    }
+  }
+  
+  const dataCheckString = Object.keys(filteredUserData)
     .sort()
-    .map((key) => `${key}=${userData[key as keyof typeof userData]}`)
+    .map((key) => `${key}=${filteredUserData[key]}`)
     .join('\n');
 
   const secretKey = crypto
@@ -39,7 +48,21 @@ export function verifyTelegramData(data: TelegramAuthData): boolean {
     .update(dataCheckString)
     .digest('hex');
 
-  return calculatedHash === hash;
+  const isValid = calculatedHash === hash;
+  
+  if (!isValid) {
+    console.warn('[Telegram] Verification failed:', {
+      userId: data.id,
+      receivedHash: hash?.substring(0, 16) + '...',
+      calculatedHash: calculatedHash.substring(0, 16) + '...',
+      dataCheckString: dataCheckString.substring(0, 200) + '...',
+      botTokenLength: BOT_TOKEN?.length || 0,
+    });
+  } else {
+    console.log('[Telegram] Verification successful for user:', data.id);
+  }
+
+  return isValid;
 }
 
 /**

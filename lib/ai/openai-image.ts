@@ -44,16 +44,32 @@ export async function generateImageWithOpenAI(prompt: string): Promise<string> {
         timeout: 60000, // 60 секунд для генерации
       }
     );
-    console.log('[OpenAI Image] Successfully used gpt-image-1 model with standard quality');
+    console.log('[OpenAI Image] Successfully used gpt-image-1 model with medium quality');
 
-    const imageUrl = response.data.data?.[0]?.url;
-    if (!imageUrl) {
-      console.error('[OpenAI Image] No image URL in response:', response.data);
-      throw new Error('Failed to generate image: No URL returned from OpenAI');
+    const imageData = response.data.data?.[0];
+    
+    // Проверяем наличие URL (обычный формат)
+    if (imageData?.url) {
+      console.log('[OpenAI Image] Generation succeeded, image URL:', imageData.url);
+      return imageData.url;
     }
-
-    console.log('[OpenAI Image] Generation succeeded, image URL:', imageUrl);
-    return imageUrl;
+    
+    // Проверяем наличие base64 (формат b64_json)
+    if (imageData?.b64_json) {
+      console.log('[OpenAI Image] Received base64 image, converting to data URL');
+      const dataUrl = `data:image/png;base64,${imageData.b64_json}`;
+      console.log('[OpenAI Image] Generation succeeded, base64 image converted to data URL');
+      return dataUrl;
+    }
+    
+    // Если ни URL, ни base64 нет - ошибка
+    console.error('[OpenAI Image] No image URL or base64 in response:', {
+      hasData: !!response.data.data,
+      dataLength: response.data.data?.length,
+      firstItemKeys: response.data.data?.[0] ? Object.keys(response.data.data[0]) : [],
+      responseKeys: Object.keys(response.data),
+    });
+    throw new Error('Failed to generate image: No URL or base64 returned from OpenAI');
   } catch (error: any) {
     console.error('[OpenAI Image] Error generating image:', {
       message: error.message,

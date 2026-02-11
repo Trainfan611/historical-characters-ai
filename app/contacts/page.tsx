@@ -28,9 +28,12 @@ export default function ContactsPage() {
                   <div className="text-2xl">📧</div>
                   <div>
                     <div className="font-medium text-slate-200">Email</div>
-                    <div className="text-slate-400 text-sm">
-                      support@historical-characters.ai
-                    </div>
+                    <a
+                      href="mailto:vlf.ru@yandex.ru"
+                      className="text-sky-300 hover:text-sky-200 text-sm transition-colors"
+                    >
+                      vlf.ru@yandex.ru
+                    </a>
                   </div>
                 </div>
 
@@ -38,9 +41,14 @@ export default function ContactsPage() {
                   <div className="text-2xl">💬</div>
                   <div>
                     <div className="font-medium text-slate-200">Telegram</div>
-                    <div className="text-slate-400 text-sm">
-                      @historical_characters_support
-                    </div>
+                    <a
+                      href="https://t.me/tgmashka2296"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sky-300 hover:text-sky-200 text-sm transition-colors"
+                    >
+                      @tgmashka2296
+                    </a>
                   </div>
                 </div>
               </div>

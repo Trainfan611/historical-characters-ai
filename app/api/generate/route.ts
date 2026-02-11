@@ -202,51 +202,45 @@ export async function POST(request: NextRequest) {
     let imageUrl: string | null = null;
     let imageSource = 'Unknown';
 
-    // 1) Пытаемся использовать Nano Banana, если ключ установлен
-    const hasNanoBananaKey = !!process.env.NANO_BANANA_API_KEY;
-    if (hasNanoBananaKey) {
-      console.log('[Generate] Attempting to generate image using Nano Banana...');
-      try {
-        imageUrl = await generateImageWithNanoBanana(prompt);
-        imageSource = 'Nano Banana';
-        console.log('[Generate] ✓ Image generated successfully with Nano Banana');
-        console.log('[Generate] Image URL:', imageUrl.substring(0, 200) + '...');
-      } catch (nanoError: any) {
-        console.error('[Generate] ✗ Nano Banana failed with error:', {
-          message: nanoError.message,
-          status: nanoError.response?.status,
-        });
-      }
-    } else {
-      console.log('[Generate] NANO_BANANA_API_KEY not set, skipping Nano Banana and using OpenAI/Replicate pipeline...');
-    }
-
-    // 2) Если Nano Banana не сработал или ключа нет — пробуем OpenAI
-    if (!imageUrl) {
-      console.log('[Generate] Attempting to generate image using OpenAI gpt-image-1...');
+    // 1) ПЕРВЫЙ ПРИОРИТЕТ: Nano Banana для генерации изображений
+    console.log('[Generate] ===== Attempting to generate image using Nano Banana (primary provider) =====');
+    try {
+      imageUrl = await generateImageWithNanoBanana(prompt);
+      imageSource = 'Nano Banana';
+      console.log('[Generate] ✓ Image generated successfully with Nano Banana');
+      console.log('[Generate] Image URL:', imageUrl.substring(0, 200) + '...');
+    } catch (nanoError: any) {
+      console.error('[Generate] ✗ Nano Banana failed with error:', {
+        message: nanoError.message,
+        status: nanoError.response?.status,
+        code: nanoError.code,
+      });
+      console.log('[Generate] ===== Attempting fallback to OpenAI gpt-image-1 =====');
+      
+      // 2) FALLBACK 1: Если Nano Banana не сработал — пробуем OpenAI
       try {
         imageUrl = await generateImageWithOpenAI(prompt);
-        imageSource = 'OpenAI gpt-image-1';
+        imageSource = 'OpenAI gpt-image-1 (fallback)';
         console.log('[Generate] ✓ Image generated successfully with OpenAI gpt-image-1');
         console.log('[Generate] Image URL:', imageUrl.substring(0, 200) + '...');
-      } catch (error: any) {
+      } catch (openaiError: any) {
         // Логируем ошибку OpenAI
         console.error('[Generate] ✗ OpenAI gpt-image-1 failed with error:', {
-          message: error.message,
-          status: error.response?.status,
-          code: error.code,
+          message: openaiError.message,
+          status: openaiError.response?.status,
+          code: openaiError.code,
         });
         
-        // 3) Fallback: если OpenAI не сработал, пробуем Replicate
-        console.log('[Generate] ===== Attempting fallback to Replicate (Flux) =====');
+        // 3) FALLBACK 2: Если OpenAI не сработал, пробуем Replicate
+        console.log('[Generate] ===== Attempting final fallback to Replicate (Flux) =====');
         console.log('[Generate] Step 1: Checking if REPLICATE_API_KEY is available...');
         
         if (!process.env.REPLICATE_API_KEY) {
-          console.error('[Generate] ✗ REPLICATE_API_KEY is not set! Cannot use fallback.');
+          console.error('[Generate] ✗ REPLICATE_API_KEY is not set! Cannot use final fallback.');
           return NextResponse.json(
             { 
               error: 'Failed to generate image',
-              details: `Nano Banana ${hasNanoBananaKey ? 'failed or not available; ' : 'not configured; '}OpenAI gpt-image-1 failed: ${error.message}. Replicate fallback unavailable: REPLICATE_API_KEY not set.`
+              details: `Nano Banana failed: ${nanoError.message}. OpenAI gpt-image-1 failed: ${openaiError.message}. Replicate fallback unavailable: REPLICATE_API_KEY not set.`
             },
             { status: 500 }
           );
@@ -255,19 +249,19 @@ export async function POST(request: NextRequest) {
         console.log('[Generate] REPLICATE_API_KEY found, attempting Replicate generation...');
         try {
           imageUrl = await generateImage(prompt);
-          imageSource = 'Replicate (fallback)';
-          console.log('[Generate] ✓ Fallback to Replicate successful!');
+          imageSource = 'Replicate (final fallback)';
+          console.log('[Generate] ✓ Final fallback to Replicate successful!');
           console.log('[Generate] Image URL:', imageUrl);
-        } catch (fallbackError: any) {
-          console.error('[Generate] ✗ Fallback to Replicate also failed:', {
-            message: fallbackError.message,
-            status: fallbackError.response?.status,
-            code: fallbackError.code,
+        } catch (replicateError: any) {
+          console.error('[Generate] ✗ Final fallback to Replicate also failed:', {
+            message: replicateError.message,
+            status: replicateError.response?.status,
+            code: replicateError.code,
           });
           return NextResponse.json(
             { 
               error: 'Failed to generate image',
-              details: `Nano Banana ${hasNanoBananaKey ? 'failed or not available; ' : 'not configured; '}OpenAI gpt-image-1 failed: ${error.message}. Replicate fallback also failed: ${fallbackError.message}`
+              details: `All providers failed: Nano Banana: ${nanoError.message}. OpenAI gpt-image-1: ${openaiError.message}. Replicate: ${replicateError.message}`
             },
             { status: 500 }
           );

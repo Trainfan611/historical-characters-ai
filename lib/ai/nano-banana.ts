@@ -1,8 +1,30 @@
 import axios from 'axios';
+import { lookup } from 'dns';
+import { promisify } from 'util';
 
 const NANO_BANANA_API_KEY = process.env.NANO_BANANA_API_KEY;
 // Согласно официальной документации: https://docs.nanobananaapi.ai/quickstart
 const NANO_BANANA_BASE_URL = 'https://api.nanobananaapi.ai/api/v1/nanobanana';
+
+// Настройка DNS lookup для IPv4 only (согласно рекомендациям из Habr)
+// Статья: https://habr.com/ru/articles/992380/
+const dnsLookup = promisify(lookup);
+
+/**
+ * Создает кастомный DNS lookup для IPv4 only
+ * Согласно статье Habr: Google использует IPv6 для идентификации, нужно принудительно использовать IPv4
+ */
+function createIPv4Lookup() {
+  return async (hostname: string, options: any, callback: any) => {
+    try {
+      const address = await dnsLookup(hostname, { family: 4 });
+      callback(null, address.address, 4);
+    } catch (error: any) {
+      // Fallback на стандартный lookup если IPv4 не работает
+      callback(error, null, null);
+    }
+  };
+}
 
 /**
  * Генерация изображения через Nano Banana API
@@ -25,7 +47,30 @@ export async function generateImageWithNanoBanana(prompt: string): Promise<strin
 
     // Шаг 1: Создаем задачу генерации
     // Согласно документации: POST /api/v1/nanobanana/generate
+    // Применяем рекомендации из Habr: https://habr.com/ru/articles/992380/
     console.log('[Nano Banana] Creating generation task...');
+    
+    // Настройка axios для IPv4 only и правильных заголовков
+    // Согласно рекомендациям из Habr: https://habr.com/ru/articles/992380/
+    // - Принудительное использование IPv4 (избегаем IPv6 утечек)
+    // - Правильные заголовки для имитации обычного браузера
+    const axiosConfig = {
+      headers: {
+        'Authorization': `Bearer ${token}`, // Согласно документации
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Connection': 'keep-alive',
+        'Cache-Control': 'no-cache',
+      },
+      timeout: 30000,
+      // Принудительное использование IPv4 (domainStrategy: UseIPv4)
+      // В Node.js это делается через family: 4 и кастомный lookup
+      family: 4, // IPv4 only
+      lookup: createIPv4Lookup(),
+    };
+    
     const generateResponse = await axios.post(
       `${NANO_BANANA_BASE_URL}/generate`,
       {
@@ -34,13 +79,7 @@ export async function generateImageWithNanoBanana(prompt: string): Promise<strin
         numImages: 1, // Генерируем 1 изображение
         // callBackUrl опционально, не используем для синхронного режима
       },
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`, // Согласно документации
-          'Content-Type': 'application/json',
-        },
-        timeout: 30000,
-      }
+      axiosConfig
     );
 
     // Проверяем ответ
@@ -141,6 +180,7 @@ async function waitForTaskCompletion(apiKey: string, taskId: string, maxWaitTime
     attempts++;
 
     try {
+      // Применяем те же настройки для IPv4 only
       const statusResponse = await axios.get(
         `${NANO_BANANA_BASE_URL}/record-info`,
         {
@@ -149,8 +189,12 @@ async function waitForTaskCompletion(apiKey: string, taskId: string, maxWaitTime
           },
           headers: {
             'Authorization': `Bearer ${apiKey}`,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json',
           },
           timeout: 10000,
+          family: 4, // IPv4 only
+          lookup: createIPv4Lookup(),
         }
       );
 

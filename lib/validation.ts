@@ -27,7 +27,8 @@ export const generateImageSchema = z.object({
     .max(200, 'Имя слишком длинное')
     .transform((val) => cleanPersonName(val)) // Очищаем от markdown перед валидацией
     .refine((val) => val.length >= 2, 'Имя должно быть не менее 2 символов после очистки')
-    .refine((val) => /^[a-zA-Zа-яА-ЯёЁ\s\-'.,()]+$/.test(val), 'Недопустимые символы в имени'),
+    // Разрешаем буквы (латиница и кириллица), цифры, пробелы, дефисы, апострофы, точки, запятые, скобки, тире для дат
+    .refine((val) => /^[a-zA-Zа-яА-ЯёЁ0-9\s\-'.,()–—]+$/.test(val), 'Недопустимые символы в имени'),
   personId: z.string().optional(),
   style: z.enum(['realistic', 'artistic', 'historical']).optional().default('realistic'),
 });

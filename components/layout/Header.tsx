@@ -23,6 +23,12 @@ export function Header() {
           >
             Генерация
           </Link>
+          <Link
+            href="/contacts"
+            className="text-slate-200 hover:text-sky-300 transition-colors"
+          >
+            Контакты
+          </Link>
 
           {status === 'loading' ? (
             <div className="w-6 h-6 border-2 border-slate-500 border-t-sky-400 rounded-full animate-spin" />

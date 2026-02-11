@@ -15,6 +15,17 @@ export async function sendTelegramMessage(chatId: string, text: string, parseMod
   }
 
   try {
+    const maskedToken =
+      TELEGRAM_BOT_TOKEN_BASE.length > 8
+        ? `${TELEGRAM_BOT_TOKEN_BASE.slice(0, 4)}...${TELEGRAM_BOT_TOKEN_BASE.slice(-4)}`
+        : 'short-token';
+    console.log('[Telegram Bot] Sending message', {
+      chatId,
+      hasToken: !!TELEGRAM_BOT_TOKEN_BASE,
+      tokenLength: TELEGRAM_BOT_TOKEN_BASE.length,
+      tokenPreview: maskedToken,
+    });
+
     const response = await axios.post(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN_BASE}/sendMessage`,
       {
@@ -122,8 +133,8 @@ export async function handleTelegramCommand(update: any) {
     return;
   }
 
-  // Команда: /stats — краткая статистика по базе
-  if (text === '/stats' || text.startsWith('/stats ')) {
+  // Команда: /start — краткая статистика по базе (для админа)
+  if (text === '/start' || text.startsWith('/start ')) {
     await sendAdminStats(chatId);
     return;
   }

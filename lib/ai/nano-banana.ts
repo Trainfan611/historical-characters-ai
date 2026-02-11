@@ -1,28 +1,32 @@
 import axios from 'axios';
 import { lookup } from 'dns';
-import { promisify } from 'util';
 
 const NANO_BANANA_API_KEY = process.env.NANO_BANANA_API_KEY;
 // Согласно официальной документации: https://docs.nanobananaapi.ai/quickstart
 const NANO_BANANA_BASE_URL = 'https://api.nanobananaapi.ai/api/v1/nanobanana';
 
-// Настройка DNS lookup для IPv4 only (согласно рекомендациям из Habr)
-// Статья: https://habr.com/ru/articles/992380/
-const dnsLookup = promisify(lookup);
-
 /**
  * Создает кастомный DNS lookup для IPv4 only
  * Согласно статье Habr: Google использует IPv6 для идентификации, нужно принудительно использовать IPv4
+ * Axios ожидает callback-функцию в формате (err, address, family) => void
  */
 function createIPv4Lookup() {
-  return async (hostname: string, options: any, callback: any) => {
-    try {
-      const address = await dnsLookup(hostname, { family: 4 });
-      callback(null, address.address, 4);
-    } catch (error: any) {
-      // Fallback на стандартный lookup если IPv4 не работает
-      callback(error, null, null);
-    }
+  return (hostname: string, options: any, callback: (err: NodeJS.ErrnoException | null, address?: string, family?: number) => void) => {
+    // Используем dns.lookup напрямую с callback (не async/await)
+    lookup(hostname, { family: 4, all: false }, (err, address, family) => {
+      if (err) {
+        // Если IPv4 не работает, пробуем без указания family (fallback)
+        lookup(hostname, { all: false }, (fallbackErr, fallbackAddress, fallbackFamily) => {
+          if (fallbackErr) {
+            callback(fallbackErr);
+          } else {
+            callback(null, fallbackAddress, fallbackFamily || 4);
+          }
+        });
+      } else {
+        callback(null, address, family || 4);
+      }
+    });
   };
 }
 

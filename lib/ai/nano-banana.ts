@@ -54,7 +54,7 @@ export async function generateImageWithNanoBanana(prompt: string): Promise<strin
     // Согласно рекомендациям из Habr: https://habr.com/ru/articles/992380/
     // - Принудительное использование IPv4 (избегаем IPv6 утечек)
     // - Правильные заголовки для имитации обычного браузера
-    const axiosConfig = {
+    const axiosConfig: any = {
       headers: {
         'Authorization': `Bearer ${token}`, // Согласно документации
         'Content-Type': 'application/json',
@@ -195,7 +195,7 @@ async function waitForTaskCompletion(apiKey: string, taskId: string, maxWaitTime
           timeout: 10000,
           family: 4, // IPv4 only
           lookup: createIPv4Lookup(),
-        }
+        } as any
       );
 
       const taskData = statusResponse.data;

@@ -120,9 +120,16 @@ The prompt should be in English and suitable for AI image generation models like
       // Всегда пробуем fallback на OpenAI при любой ошибке
       console.log('[Gemini] ===== Attempting fallback to OpenAI =====');
       console.log('[Gemini] Error status:', errorStatus || 'unknown');
+      console.log('[Gemini] Error details:', {
+        message: error.message,
+        status: errorStatus,
+        data: error.response?.data,
+      });
       
       if (errorStatus === 403 || errorStatus === 401) {
         console.log('[Gemini] API not enabled or invalid key, using OpenAI fallback...');
+      } else if (errorStatus === 400) {
+        console.log('[Gemini] Bad Request (400) - likely model not available or invalid request, using OpenAI fallback...');
       } else {
         console.log('[Gemini] Other error occurred, using OpenAI fallback...');
       }

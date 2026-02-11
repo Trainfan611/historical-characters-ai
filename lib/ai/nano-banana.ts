@@ -44,19 +44,35 @@ export async function generateImageWithNanoBanana(prompt: string): Promise<strin
     );
 
     // Проверяем ответ
+    // Nano Banana может возвращать ошибки как в HTTP статусе, так и в теле ответа (code)
+    const httpStatus = generateResponse.status;
     const responseCode = generateResponse.data?.code;
     const responseMsg = generateResponse.data?.msg;
     
-    if (responseCode !== 200) {
+    // Проверяем HTTP статус код
+    if (httpStatus === 401 || responseCode === 401) {
+      const errorMsg = responseMsg || 'You do not have access permissions';
+      console.error('[Nano Banana] Access denied (401):', {
+        httpStatus,
+        responseCode,
+        msg: errorMsg,
+        data: generateResponse.data,
+      });
+      throw new Error(`Nano Banana API access denied: ${errorMsg}. Please check your API key and permissions at https://nanobananaapi.ai/api-key`);
+    }
+    
+    // Проверяем код ответа в теле (если не 200)
+    if (responseCode && responseCode !== 200) {
       console.error('[Nano Banana] API returned error:', {
+        httpStatus,
         code: responseCode,
         msg: responseMsg,
         data: generateResponse.data,
       });
       
       // Если ошибка доступа, выбрасываем понятную ошибку
-      if (responseMsg?.includes('access') || responseMsg?.includes('permission')) {
-        throw new Error(`Nano Banana API access denied: ${responseMsg}. Please check your API key at https://nanobananaapi.ai/api-key`);
+      if (responseCode === 401 || responseMsg?.includes('access') || responseMsg?.includes('permission')) {
+        throw new Error(`Nano Banana API access denied: ${responseMsg || 'You do not have access permissions'}. Please check your API key and permissions at https://nanobananaapi.ai/api-key`);
       }
       
       throw new Error(`Nano Banana API error: ${responseMsg || 'Unknown error'}`);
@@ -77,32 +93,33 @@ export async function generateImageWithNanoBanana(prompt: string): Promise<strin
   } catch (error: any) {
     const errorStatus = error.response?.status;
     const errorData = error.response?.data;
+    const errorCode = errorData?.code; // Код ошибки в теле ответа
     
     console.error('[Nano Banana] ✗ Error generating image:', {
       message: error.message,
-      status: errorStatus,
+      httpStatus: errorStatus,
+      responseCode: errorCode,
       statusText: error.response?.statusText,
       responseData: errorData,
     });
 
     // Обработка различных типов ошибок
-    if (errorStatus === 401 || error.message?.includes('access') || error.message?.includes('permission')) {
-      const errorMsg = error.message?.includes('access') || error.message?.includes('permission') 
-        ? error.message 
-        : 'NANO_BANANA_API_KEY is invalid or expired';
-      throw new Error(`${errorMsg}. Please check your API key at https://nanobananaapi.ai/api-key`);
+    // Проверяем и HTTP статус, и код в теле ответа
+    if (errorStatus === 401 || errorCode === 401 || error.message?.includes('access') || error.message?.includes('permission')) {
+      const errorMsg = errorData?.msg || error.message || 'You do not have access permissions';
+      throw new Error(`Nano Banana API access denied: ${errorMsg}. Please check your API key and permissions at https://nanobananaapi.ai/api-key. Make sure your API key has access to image generation features.`);
     }
 
-    if (errorStatus === 429) {
+    if (errorStatus === 429 || errorCode === 429) {
       throw new Error('Nano Banana API rate limit exceeded. Please try again later.');
     }
 
-    if (errorStatus === 400) {
+    if (errorStatus === 400 || errorCode === 400) {
       const errorMessage = errorData?.msg || errorData?.message || error.message;
       throw new Error(`Invalid request to Nano Banana API: ${errorMessage}`);
     }
 
-    // Пробрасываем ошибку дальше для fallback на Replicate
+    // Пробрасываем ошибку дальше для fallback на OpenAI/Replicate
     throw new Error(`Failed to generate image with Nano Banana: ${error.message}`);
   }
 }

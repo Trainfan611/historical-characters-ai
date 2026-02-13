@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { prisma } from '@/lib/db';
 
-const TELEGRAM_BOT_TOKEN_BASE = process.env.TELEGRAM_BOT_TOKEN_BASE;
+// Используем TELEGRAM_BOT_TOKEN_BASE для админ-функций, fallback на TELEGRAM_BOT_TOKEN
+const TELEGRAM_BOT_TOKEN_BASE = process.env.TELEGRAM_BOT_TOKEN_BASE || process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID; // Ваш Telegram ID
 const NEXTAUTH_URL = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000';
 
@@ -10,7 +11,7 @@ const NEXTAUTH_URL = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http
  */
 export async function sendTelegramMessage(chatId: string, text: string, parseMode: 'HTML' | 'Markdown' = 'HTML') {
   if (!TELEGRAM_BOT_TOKEN_BASE) {
-    console.warn('[Telegram Bot] TELEGRAM_BOT_TOKEN_BASE not set');
+    console.error('[Telegram Bot] TELEGRAM_BOT_TOKEN_BASE and TELEGRAM_BOT_TOKEN are not set');
     return null;
   }
 
@@ -45,7 +46,13 @@ export async function sendTelegramMessage(chatId: string, text: string, parseMod
  * Генерирует ссылку на админ-панель и отправляет её в Telegram
  */
 export async function sendAdminLink(chatId: string) {
-  if (!TELEGRAM_ADMIN_ID || chatId !== TELEGRAM_ADMIN_ID) {
+  const isAdmin = TELEGRAM_ADMIN_ID && chatId === TELEGRAM_ADMIN_ID;
+  
+  if (!isAdmin) {
+    console.log('[Telegram Bot] Admin link requested by non-admin:', {
+      chatId,
+      adminId: TELEGRAM_ADMIN_ID,
+    });
     return { success: false, error: 'Unauthorized' };
   }
 
@@ -75,10 +82,28 @@ export async function sendAdminLink(chatId: string) {
  * Отправляет краткую статистику по базе для админа
  */
 export async function sendAdminStats(chatId: string) {
-  if (!TELEGRAM_ADMIN_ID || chatId !== TELEGRAM_ADMIN_ID) {
-    await sendTelegramMessage(chatId, '❌ У вас нет доступа к этой команде.');
+  // Проверяем, что пользователь - админ (по chatId или по from.id)
+  const isAdmin = TELEGRAM_ADMIN_ID && chatId === TELEGRAM_ADMIN_ID;
+  
+  if (!isAdmin) {
+    console.log('[Telegram Bot] Stats requested by non-admin:', {
+      chatId,
+      adminId: TELEGRAM_ADMIN_ID,
+    });
+    
+    // Если TELEGRAM_ADMIN_ID не установлен, отправляем информационное сообщение
+    if (!TELEGRAM_ADMIN_ID) {
+      await sendTelegramMessage(
+        chatId,
+        '⚠️ Админ-статистика недоступна: TELEGRAM_ADMIN_ID не настроен в переменных окружения.'
+      );
+    } else {
+      await sendTelegramMessage(chatId, '❌ У вас нет доступа к этой команде.');
+    }
     return;
   }
+
+  console.log('[Telegram Bot] Sending admin stats to:', chatId);
 
   try {
     const startOfToday = new Date();
@@ -118,16 +143,32 @@ export async function sendAdminStats(chatId: string) {
  */
 export async function handleTelegramCommand(update: any) {
   const message = update.message;
-  if (!message) return;
+  if (!message) {
+    console.log('[Telegram Bot] No message in update:', JSON.stringify(update));
+    return;
+  }
 
   const chatId = message.chat.id.toString();
   const text: string = message.text || '';
+  const fromId = message.from?.id?.toString();
+
+  console.log('[Telegram Bot] Received command:', {
+    chatId,
+    fromId,
+    text,
+    hasAdminId: !!TELEGRAM_ADMIN_ID,
+    adminId: TELEGRAM_ADMIN_ID,
+    isAdmin: chatId === TELEGRAM_ADMIN_ID || fromId === TELEGRAM_ADMIN_ID,
+  });
 
   // Команда: /admin — отправка ссылки на админ-панель
   if (text === '/admin' || text.startsWith('/admin ')) {
-    if (TELEGRAM_ADMIN_ID && chatId === TELEGRAM_ADMIN_ID) {
+    const isAdmin = TELEGRAM_ADMIN_ID && (chatId === TELEGRAM_ADMIN_ID || fromId === TELEGRAM_ADMIN_ID);
+    if (isAdmin) {
+      console.log('[Telegram Bot] Admin link requested by admin');
       await sendAdminLink(chatId);
     } else {
+      console.log('[Telegram Bot] Admin link requested by non-admin');
       await sendTelegramMessage(chatId, '❌ У вас нет доступа к этой команде.');
     }
     return;
@@ -135,7 +176,19 @@ export async function handleTelegramCommand(update: any) {
 
   // Команда: /start — краткая статистика по базе (для админа)
   if (text === '/start' || text.startsWith('/start ')) {
+    console.log('[Telegram Bot] /start command received');
     await sendAdminStats(chatId);
     return;
+  }
+
+  // Если команда не распознана, отправляем помощь
+  if (text.startsWith('/')) {
+    console.log('[Telegram Bot] Unknown command:', text);
+    const helpMessage = 
+      '🤖 <b>Historical Characters AI Bot</b>\n\n' +
+      'Доступные команды:\n' +
+      '/start - Статистика (для админа)\n' +
+      '/admin - Ссылка на админ-панель (для админа)';
+    await sendTelegramMessage(chatId, helpMessage);
   }
 }

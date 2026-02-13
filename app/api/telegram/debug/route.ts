@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
 
   // Общий статус
   diagnostics.status = diagnostics.issues.length === 0 ? 'ok' : 
-                       diagnostics.issues.some(i => i.startsWith('❌')) ? 'error' : 'warning';
+                       diagnostics.issues.some((i: string) => i.startsWith('❌')) ? 'error' : 'warning';
 
   return NextResponse.json(diagnostics, { 
     status: diagnostics.status === 'error' ? 500 : 200 

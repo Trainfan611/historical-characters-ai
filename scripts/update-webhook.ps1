@@ -11,6 +11,34 @@ if (-not $token) {
     $token = Read-Host "Введите токен бота от @BotFather"
 }
 
+# Убираем пробелы и переносы строк из токена
+$token = $token.Trim()
+
+# Проверяем формат токена
+if (-not $token -or $token -notmatch '^\d+:[A-Za-z0-9_-]+$') {
+    Write-Host "⚠️ Предупреждение: Токен может быть неправильного формата" -ForegroundColor Yellow
+    Write-Host "Токен должен начинаться с цифр и содержать двоеточие" -ForegroundColor Yellow
+    Write-Host "Пример: 1234567890:ABCdefGHIjklMNOpqrsTUVwxyz" -ForegroundColor Gray
+    Write-Host ""
+}
+
+# Проверяем, что бот существует
+Write-Host "Проверка токена..." -ForegroundColor Cyan
+try {
+    $botInfo = Invoke-RestMethod -Uri "https://api.telegram.org/bot$token/getMe" -Method Get -ErrorAction Stop
+    if ($botInfo.ok) {
+        Write-Host "✓ Токен валидный. Бот: @$($botInfo.result.username)" -ForegroundColor Green
+    } else {
+        Write-Host "✗ Токен невалидный" -ForegroundColor Red
+        exit 1
+    }
+} catch {
+    Write-Host "✗ Ошибка проверки токена: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Возможно, токен неправильный или бот не существует" -ForegroundColor Yellow
+    exit 1
+}
+Write-Host ""
+
 # URL webhook
 $webhookUrl = "https://historical-characters.up.railway.app/api/telegram/webhook"
 

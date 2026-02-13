@@ -14,7 +14,7 @@
 
 🎯 Попробуйте прямо сейчас — бесплатно!
 
-👉 Переходите по ссылке: [historical-characters.ai](https://your-domain.com)
+👉 Переходите по ссылке: [historical-characters.ai](https://historical-characters.up.railway.app)
 
 #AI #История #ГенерацияИзображений #Нейросети #ИсторическиеЛичности
 ```
@@ -101,7 +101,7 @@ Create a promotional banner showcasing an AI-generated historical portrait:
 
 Создавайте реалистичные портреты исторических личностей с помощью AI!
 
-✨ Попробуйте бесплатно → [historical-characters.ai](https://your-domain.com)
+✨ Попробуйте бесплатно → [historical-characters.ai](https://historical-characters.up.railway.app)
 
 #AI #История #ГенерацияИзображений
 ```

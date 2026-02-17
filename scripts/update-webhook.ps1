@@ -39,11 +39,40 @@ try {
 }
 Write-Host ""
 
-# URL webhook
-$webhookUrl = "https://historical-characters.up.railway.app/api/telegram/webhook"
+# Получаем домен из переменной окружения или запрашиваем у пользователя
+$nextAuthUrl = $env:NEXTAUTH_URL
+$domain = ""
 
+if ($nextAuthUrl) {
+    # Извлекаем домен из NEXTAUTH_URL (убираем https:// и пути)
+    if ($nextAuthUrl -match 'https?://([^/]+)') {
+        $domain = $matches[1]
+        Write-Host "✓ Домен найден в NEXTAUTH_URL: $domain" -ForegroundColor Green
+    }
+}
+
+if (-not $domain) {
+    Write-Host "Домен не найден в переменных окружения." -ForegroundColor Yellow
+    Write-Host "Введите домен (без https:// и без путей):" -ForegroundColor Cyan
+    Write-Host "Пример: history-character.up.railway.app" -ForegroundColor Gray
+    $domain = Read-Host "Домен"
+    $domain = $domain.Trim()
+    
+    # Убираем https:// и пути, если пользователь их ввел
+    if ($domain -match 'https?://([^/]+)') {
+        $domain = $matches[1]
+    }
+    $domain = $domain -replace '/.*$', ''  # Убираем пути
+}
+
+# URL webhook
+$webhookUrl = "https://$domain/api/telegram/webhook"
+
+Write-Host ""
 Write-Host "Обновление webhook..." -ForegroundColor Cyan
+Write-Host "Домен: $domain" -ForegroundColor Gray
 Write-Host "URL: $webhookUrl" -ForegroundColor Gray
+Write-Host ""
 
 # Обновляем webhook
 try {

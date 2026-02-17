@@ -16,10 +16,12 @@ export async function generateImagePrompt(
   personInfo: PersonInfo,
   style: string = 'realistic'
 ): Promise<string> {
-  // Пробуем использовать Gemini, если ключ есть
+  // ПЕРВЫЙ ПРИОРИТЕТ: Используем Gemini для формирования промпта изображения
   if (GEMINI_API_KEY) {
     try {
-      console.log('[Gemini] Starting prompt generation for:', personInfo.name);
+      console.log('[Gemini] ===== [PRIMARY] Starting prompt generation with Gemini =====');
+      console.log('[Gemini] Person:', personInfo.name);
+      console.log('[Gemini] Style:', style);
       console.log('[Gemini] API key length:', GEMINI_API_KEY?.length || 0);
 
       // Согласно документации, используем заголовок x-goog-api-key
@@ -105,10 +107,13 @@ The prompt should be in English and suitable for AI image generation models like
         throw new Error('Failed to generate prompt from Gemini: No text in response');
       }
 
-      console.log('[Gemini] Prompt generated successfully:', prompt.substring(0, 100));
+      console.log('[Gemini] ✓ Prompt generated successfully with Gemini');
+      console.log('[Gemini] Prompt preview:', prompt.substring(0, 100));
 
       // Добавляем технические параметры для лучшего качества
-      return `${prompt.trim()}, high quality, detailed, professional photography, 8k resolution, historical accuracy`;
+      const finalPrompt = `${prompt.trim()}, high quality, detailed, professional photography, 8k resolution, historical accuracy`;
+      console.log('[Gemini] Final prompt length:', finalPrompt.length);
+      return finalPrompt;
     } catch (error: any) {
       const errorStatus = error.response?.status;
       console.error('[Gemini] ✗ Error generating prompt:', {
@@ -117,8 +122,9 @@ The prompt should be in English and suitable for AI image generation models like
         statusText: error.response?.statusText,
       });
 
-      // Всегда пробуем fallback на OpenAI при любой ошибке
-      console.log('[Gemini] ===== Attempting fallback to OpenAI =====');
+      // FALLBACK: Если Gemini не сработал, пробуем OpenAI
+      console.log('[Gemini] ✗ Gemini failed, attempting fallback to OpenAI...');
+      console.log('[Gemini] ===== [FALLBACK] Attempting fallback to OpenAI =====');
       console.log('[Gemini] Error status:', errorStatus || 'unknown');
       console.log('[Gemini] Error details:', {
         message: error.message,
@@ -146,8 +152,9 @@ The prompt should be in English and suitable for AI image generation models like
     }
   }
 
-  // Если ключа Gemini нет, используем OpenAI
-  console.log('[Gemini] GEMINI_API_KEY not set, using OpenAI...');
+  // Если ключа Gemini нет, используем OpenAI как fallback
+  console.log('[Gemini] ⚠️ GEMINI_API_KEY not set, using OpenAI as fallback...');
+  console.log('[Gemini] ===== [FALLBACK] Using OpenAI (GEMINI_API_KEY not configured) =====');
   return await generateImagePromptWithOpenAI(personInfo, style);
 }
 

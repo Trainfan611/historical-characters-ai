@@ -12,7 +12,7 @@ if [ -z "$TOKEN" ]; then
 fi
 
 # URL webhook
-WEBHOOK_URL="https://historical-characters.up.railway.app/api/telegram/webhook"
+WEBHOOK_URL="https://history-character.up.railway.app/api/telegram/webhook"
 
 echo "Обновление webhook..."
 echo "URL: $WEBHOOK_URL"

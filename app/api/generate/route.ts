@@ -176,8 +176,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Генерация промпта
+    // Генерация промпта для изображения
+    // Приоритет: Gemini (основной) → OpenAI (fallback)
     console.log('[Generate] ===== Starting prompt generation =====');
+    console.log('[Generate] Provider priority: 1) Gemini → 2) OpenAI (fallback)');
     let prompt: string;
     try {
       prompt = await generateImagePrompt(personInfo, style);
@@ -196,26 +198,32 @@ export async function POST(request: NextRequest) {
     }
 
     // Генерация изображения
-    // Новый приоритет: Nano Banana → OpenAI gpt-image-1 → Replicate (Flux) как финальный fallback
+    // ПРИОРИТЕТ ГЕНЕРАЦИИ (по порядку):
+    // 1. Nano Banana (ПЕРВЫЙ ПРИОРИТЕТ - основной провайдер)
+    // 2. OpenAI gpt-image-1 (fallback, если Nano Banana недоступен)
+    // 3. Replicate Flux (финальный fallback, если оба предыдущих не работают)
     console.log('[Generate] ===== Starting image generation =====');
+    console.log('[Generate] Priority order: 1) Nano Banana → 2) OpenAI gpt-image-1 → 3) Replicate Flux');
 
     let imageUrl: string | null = null;
     let imageSource = 'Unknown';
 
     // 1) ПЕРВЫЙ ПРИОРИТЕТ: Nano Banana для генерации изображений
-    console.log('[Generate] ===== Attempting to generate image using Nano Banana (primary provider) =====');
+    console.log('[Generate] ===== [1/3] Attempting to generate image using Nano Banana (PRIMARY PROVIDER) =====');
     try {
       imageUrl = await generateImageWithNanoBanana(prompt);
       imageSource = 'Nano Banana';
       console.log('[Generate] ✓ Image generated successfully with Nano Banana');
       console.log('[Generate] Image URL:', imageUrl.substring(0, 200) + '...');
     } catch (nanoError: any) {
-      console.error('[Generate] ✗ Nano Banana failed with error:', {
-        message: nanoError.message,
-        status: nanoError.response?.status,
-        code: nanoError.code,
-      });
-      console.log('[Generate] ===== Attempting fallback to OpenAI gpt-image-1 =====');
+      // Извлекаем чистое сообщение об ошибке (без дублирования)
+      const errorMessage = nanoError.message?.includes('Nano Banana API access denied') 
+        ? 'Nano Banana API access denied (check API key permissions)' 
+        : nanoError.message || 'Unknown error';
+      
+      console.error('[Generate] ✗ Nano Banana failed:', errorMessage);
+      console.log('[Generate] ⚠️ Nano Banana недоступен, автоматически переключаюсь на OpenAI gpt-image-1...');
+      console.log('[Generate] ===== [2/3] Attempting fallback to OpenAI gpt-image-1 =====');
       
       // 2) FALLBACK 1: Если Nano Banana не сработал — пробуем OpenAI
       try {
@@ -232,7 +240,7 @@ export async function POST(request: NextRequest) {
         });
         
         // 3) FALLBACK 2: Если OpenAI не сработал, пробуем Replicate
-        console.log('[Generate] ===== Attempting final fallback to Replicate (Flux) =====');
+        console.log('[Generate] ===== [3/3] Attempting final fallback to Replicate (Flux) =====');
         console.log('[Generate] Step 1: Checking if REPLICATE_API_KEY is available...');
         
         if (!process.env.REPLICATE_API_KEY) {

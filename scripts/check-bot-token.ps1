@@ -85,7 +85,7 @@ if ($update -eq "Y" -or $update -eq "y") {
     Write-Host ""
     Write-Host "Обновление webhook..." -ForegroundColor Cyan
     
-    $webhookUrl = "https://historical-characters.up.railway.app/api/telegram/webhook"
+    $webhookUrl = "https://history-character.up.railway.app/api/telegram/webhook"
     
     try {
         $response = Invoke-RestMethod -Uri "https://api.telegram.org/bot$token/setWebhook" -Method Post -Body @{

@@ -4,7 +4,7 @@
 
 Webhook настроен на старый домен:
 - **Текущий webhook:** `https://historical-characters-ai-production.up.railway.app/api/telegram/webhook`
-- **Правильный домен:** `https://historical-characters.up.railway.app`
+- **Правильный домен:** `https://history-character.up.railway.app`
 
 Ошибка: `Wrong response from the webhook: 404 Not Found`
 
@@ -14,7 +14,7 @@ Webhook настроен на старый домен:
 
 В Railway установите:
 ```
-NEXTAUTH_URL=https://historical-characters.up.railway.app
+NEXTAUTH_URL=https://history-character.up.railway.app
 ```
 
 ### 2. Обновите webhook через Telegram API
@@ -22,7 +22,7 @@ NEXTAUTH_URL=https://historical-characters.up.railway.app
 Выполните команду (замените `ВАШ_ТОКЕН` на ваш токен бота):
 
 ```bash
-curl -X POST "https://api.telegram.org/botВАШ_ТОКЕН/setWebhook?url=https://historical-characters.up.railway.app/api/telegram/webhook"
+curl -X POST "https://api.telegram.org/botВАШ_ТОКЕН/setWebhook?url=https://history-character.up.railway.app/api/telegram/webhook"
 ```
 
 ### 3. Проверьте webhook
@@ -36,7 +36,7 @@ curl "https://api.telegram.org/botВАШ_ТОКЕН/getWebhookInfo"
 {
   "ok": true,
   "result": {
-    "url": "https://historical-characters.up.railway.app/api/telegram/webhook",
+    "url": "https://history-character.up.railway.app/api/telegram/webhook",
     "has_custom_certificate": false,
     "pending_update_count": 0
   }
@@ -47,7 +47,7 @@ curl "https://api.telegram.org/botВАШ_ТОКЕН/getWebhookInfo"
 
 Откройте:
 ```
-https://historical-characters.up.railway.app/api/telegram/debug
+https://history-character.up.railway.app/api/telegram/debug
 ```
 
 Должны увидеть:
@@ -63,7 +63,7 @@ https://historical-characters.up.railway.app/api/telegram/debug
 #!/bin/bash
 
 TELEGRAM_BOT_TOKEN="ваш_токен"
-WEBHOOK_URL="https://historical-characters.up.railway.app/api/telegram/webhook"
+WEBHOOK_URL="https://history-character.up.railway.app/api/telegram/webhook"
 
 curl -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook?url=${WEBHOOK_URL}"
 ```

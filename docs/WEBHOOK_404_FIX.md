@@ -55,7 +55,7 @@
 ```powershell
 # Замените ВАШ_ТОКЕН на реальный токен
 $token = "ВАШ_ТОКЕН"
-$webhookUrl = "https://historical-characters.up.railway.app/api/telegram/webhook"
+$webhookUrl = "https://history-character.up.railway.app/api/telegram/webhook"
 
 # Проверяем токен
 Write-Host "Токен (первые 10 символов): $($token.Substring(0, [Math]::Min(10, $token.Length)))..." -ForegroundColor Cyan
@@ -74,7 +74,7 @@ $response | ConvertTo-Json
 2. Откройте в браузере (замените `ВАШ_ТОКЕН`):
 
 ```
-https://api.telegram.org/botВАШ_ТОКЕН/setWebhook?url=https://historical-characters.up.railway.app/api/telegram/webhook
+https://api.telegram.org/botВАШ_ТОКЕН/setWebhook?url=https://history-character.up.railway.app/api/telegram/webhook
 ```
 
 **Важно:** 
@@ -86,7 +86,7 @@ https://api.telegram.org/botВАШ_ТОКЕН/setWebhook?url=https://historical-
 
 ```bash
 curl -X POST "https://api.telegram.org/botВАШ_ТОКЕН/setWebhook" \
-  -d "url=https://historical-characters.up.railway.app/api/telegram/webhook"
+  -d "url=https://history-character.up.railway.app/api/telegram/webhook"
 ```
 
 ### Шаг 4: Проверьте, что бот существует
@@ -151,7 +151,7 @@ https://api.telegram.org/botВАШ_ТОКЕН/setWebhook?url=...
 
 2. **Проверьте диагностику:**
    ```
-   https://historical-characters.up.railway.app/api/telegram/debug
+   https://history-character.up.railway.app/api/telegram/debug
    ```
 
 3. **Отправьте боту `/start`** — бот должен ответить

@@ -47,7 +47,7 @@ cd C:\Users\Dell\historical-characters-ai
 
 ```powershell
 $token = "ВАШ_ТОКЕН"
-$webhookUrl = "https://historical-characters.up.railway.app/api/telegram/webhook"
+$webhookUrl = "https://history-character.up.railway.app/api/telegram/webhook"
 
 Invoke-RestMethod -Uri "https://api.telegram.org/bot$token/setWebhook" -Method Post -Body @{
     url = $webhookUrl
@@ -65,7 +65,7 @@ Invoke-RestMethod -Uri "https://api.telegram.org/bot$token/getWebhookInfo" -Meth
 {
   "ok": true,
   "result": {
-    "url": "https://historical-characters.up.railway.app/api/telegram/webhook",
+    "url": "https://history-character.up.railway.app/api/telegram/webhook",
     "pending_update_count": 0
   }
 }
@@ -84,7 +84,7 @@ Invoke-RestMethod -Uri "https://api.telegram.org/bot$token/getWebhookInfo" -Meth
 Замените `ВАШ_ТОКЕН` на ваш токен:
 
 ```
-https://api.telegram.org/botВАШ_ТОКЕН/setWebhook?url=https://historical-characters.up.railway.app/api/telegram/webhook
+https://api.telegram.org/botВАШ_ТОКЕН/setWebhook?url=https://history-character.up.railway.app/api/telegram/webhook
 ```
 
 Должны увидеть:
@@ -114,7 +114,7 @@ https://api.telegram.org/botВАШ_ТОКЕН/getWebhookInfo
    - URL: `https://api.telegram.org/botВАШ_ТОКЕН/setWebhook`
    - Method: POST
    - Body (form-data):
-     - `url`: `https://historical-characters.up.railway.app/api/telegram/webhook`
+     - `url`: `https://history-character.up.railway.app/api/telegram/webhook`
 
 2. Отправьте запрос
 
@@ -126,7 +126,7 @@ https://api.telegram.org/botВАШ_ТОКЕН/getWebhookInfo
 
 1. **Проверьте диагностику:**
    ```
-   https://historical-characters.up.railway.app/api/telegram/debug
+   https://history-character.up.railway.app/api/telegram/debug
    ```
    
    Должны увидеть:

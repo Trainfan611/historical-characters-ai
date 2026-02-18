@@ -41,7 +41,7 @@ export function Header() {
                 Профиль
               </Link>
               <button
-                onClick={() => signOut()}
+                onClick={() => signOut({ callbackUrl: '/login' })}
                 className="px-3 py-1.5 text-[11px] sm:text-xs bg-slate-900 border border-slate-700 text-slate-200 hover:border-slate-500 rounded-full transition-colors"
               >
                 Выйти

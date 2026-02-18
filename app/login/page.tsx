@@ -1,11 +1,38 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { TelegramLogin } from '@/components/auth/TelegramLogin';
 
 export default function LoginPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Если пользователь уже авторизован, перенаправляем на страницу генерации
+    if (status === 'authenticated' && session) {
+      router.push('/generate');
+    }
+  }, [status, session, router]);
+
+  // Показываем загрузку, пока проверяем сессию
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Если пользователь уже авторизован, не показываем страницу входа
+  if (status === 'authenticated') {
+    return null;
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />

@@ -35,7 +35,9 @@ export function TelegramLogin() {
         }
 
         // Успешный логин — сразу отправляем на страницу генерации
-        router.push('/generate');
+        if (result?.ok !== false) {
+          router.push('/generate');
+        }
       } catch (error) {
         console.error('Login error:', error);
       }

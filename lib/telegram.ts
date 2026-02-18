@@ -1,8 +1,9 @@
 import crypto from 'crypto';
 import axios from 'axios';
 
-// Основной бот (логин, проверка подписки и т.п.) продолжает использовать TELEGRAM_BOT_TOKEN
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+// Основной бот (логин, проверка подписки и т.п.)
+// Используем TELEGRAM_BOT_TOKEN, fallback на TELEGRAM_BOT_TOKEN_BASE для совместимости
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN_BASE;
 const TELEGRAM_API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
 export interface TelegramAuthData {

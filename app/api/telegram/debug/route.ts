@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     webhook: {
       url: `${NEXTAUTH_URL}/api/telegram/webhook`,
       testEndpoint: `${NEXTAUTH_URL}/api/telegram/test`,
+      setWebhookEndpoint: `${NEXTAUTH_URL}/api/telegram/set-webhook`,
     },
     database: {
       connected: false,

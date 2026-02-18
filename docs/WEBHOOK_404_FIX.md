@@ -1,176 +1,167 @@
 # 🔧 Исправление ошибки 404 при обновлении webhook
 
-## Проблема
+## ❌ Ошибка: `{"ok":false,"error_code":404,"description":"Not Found"}`
 
-При попытке обновить webhook получаете:
-```json
-{"ok":false,"error_code":404,"description":"Not Found"}
-```
+Эта ошибка означает, что Telegram API не может найти бота с указанным токеном.
 
-## Причины
+## 🔍 Причины и решения
 
-1. **Неправильный токен бота** — токен неверный или не существует
-2. **Неправильный формат URL** — токен не включен в URL правильно
-3. **Токен содержит лишние символы** — пробелы, переносы строк и т.д.
+### Причина 1: Неправильный токен
 
-## Решение
+**Проверьте:**
+1. Токен скопирован полностью (включая все символы)
+2. Нет лишних пробелов в начале или конце
+3. Токен в формате: `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`
 
-### Шаг 1: Проверьте токен бота
+**Решение:**
+1. Откройте Railway → Ваш проект → Variables
+2. Найдите `TELEGRAM_BOT_TOKEN_BASE` или `TELEGRAM_BOT_TOKEN`
+3. Скопируйте токен заново (убедитесь, что скопировали полностью)
+4. Попробуйте снова
 
-#### Способ 1: Через @BotFather
+### Причина 2: Токен устарел или бот удален
 
+**Проверьте:**
 1. Откройте [@BotFather](https://t.me/BotFather) в Telegram
 2. Отправьте `/mybots`
 3. Выберите вашего бота
-4. Выберите "API Token"
-5. Скопируйте токен (он должен выглядеть как: `1234567890:ABCdefGHIjklMNOpqrsTUVwxyz`)
+4. Проверьте, что бот активен
 
-#### Способ 2: Через Railway
+**Решение:**
+Если бот не найден или токен не работает:
+1. Создайте нового бота через `/newbot` в BotFather
+2. Получите новый токен
+3. Обновите `TELEGRAM_BOT_TOKEN_BASE` в Railway
+4. Попробуйте обновить webhook снова
 
-1. Откройте ваш проект в Railway
-2. Перейдите в "Variables"
-3. Найдите `TELEGRAM_BOT_TOKEN_BASE` или `TELEGRAM_BOT_TOKEN`
-4. Скопируйте значение (убедитесь, что нет лишних пробелов)
+### Причина 3: Неправильный формат URL
 
-### Шаг 2: Проверьте формат токена
-
-Токен должен:
-- Начинаться с цифр
-- Содержать двоеточие `:`
-- Быть длиной примерно 45-50 символов
-- Не содержать пробелов в начале или конце
-
-**Пример правильного токена:**
+**Правильный формат:**
 ```
-1234567890:ABCdefGHIjklMNOpqrsTUVwxyz-1234567890
+https://api.telegram.org/botТОКЕН/setWebhook?url=https://history-character.up.railway.app/api/telegram/webhook
 ```
 
-### Шаг 3: Обновите webhook правильно
+**Неправильно:**
+- Пробелы в URL
+- Лишние символы
+- Неправильный протокол (http вместо https)
 
-#### Вариант A: Через PowerShell (рекомендуется)
+## ✅ Правильный способ обновления
 
-1. Откройте PowerShell
-2. Выполните:
+### Вариант 1: Через браузер (рекомендуется)
+
+1. Получите токен из Railway
+2. Откройте в браузере (замените `ВАШ_ТОКЕН`):
+   ```
+   https://api.telegram.org/botВАШ_ТОКЕН/setWebhook?url=https://history-character.up.railway.app/api/telegram/webhook
+   ```
+
+3. Убедитесь, что:
+   - Нет пробелов в URL
+   - Токен скопирован полностью
+   - URL закодирован правильно
+
+### Вариант 2: Через PowerShell
 
 ```powershell
-# Замените ВАШ_ТОКЕН на реальный токен
-$token = "ВАШ_ТОКЕН"
+# Замените YOUR_TOKEN на ваш токен
+$token = "YOUR_TOKEN"
 $webhookUrl = "https://history-character.up.railway.app/api/telegram/webhook"
 
-# Проверяем токен
-Write-Host "Токен (первые 10 символов): $($token.Substring(0, [Math]::Min(10, $token.Length)))..." -ForegroundColor Cyan
+# Сначала проверим токен
+Write-Host "Проверка токена..." -ForegroundColor Cyan
+try {
+    $botInfo = Invoke-RestMethod -Uri "https://api.telegram.org/bot$token/getMe" -Method Get
+    if ($botInfo.ok) {
+        Write-Host "✓ Токен валидный. Бот: @$($botInfo.result.username)" -ForegroundColor Green
+    } else {
+        Write-Host "❌ Токен невалидный" -ForegroundColor Red
+        exit 1
+    }
+} catch {
+    Write-Host "❌ Ошибка проверки токена: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
+}
 
 # Обновляем webhook
-$response = Invoke-RestMethod -Uri "https://api.telegram.org/bot$token/setWebhook" -Method Post -Body @{
-    url = $webhookUrl
-} -ContentType "application/x-www-form-urlencoded"
-
-$response | ConvertTo-Json
+Write-Host "Обновление webhook..." -ForegroundColor Cyan
+try {
+    $response = Invoke-RestMethod -Uri "https://api.telegram.org/bot$token/setWebhook" -Method Post -Body @{
+        url = $webhookUrl
+    } -ContentType "application/x-www-form-urlencoded"
+    
+    if ($response.ok) {
+        Write-Host "✓ Webhook успешно обновлен!" -ForegroundColor Green
+    } else {
+        Write-Host "❌ Ошибка: $($response.description)" -ForegroundColor Red
+    }
+} catch {
+    Write-Host "❌ Ошибка: $($_.Exception.Message)" -ForegroundColor Red
+}
 ```
 
-#### Вариант B: Через браузер
+## 🔍 Диагностика
 
-1. Убедитесь, что токен правильный (см. Шаг 1)
-2. Откройте в браузере (замените `ВАШ_ТОКЕН`):
+### Шаг 1: Проверьте токен
 
-```
-https://api.telegram.org/botВАШ_ТОКЕН/setWebhook?url=https://history-character.up.railway.app/api/telegram/webhook
-```
-
-**Важно:** 
-- Не должно быть пробелов в URL
-- Токен должен быть сразу после `/bot` без пробелов
-- URL должен быть полным с `https://`
-
-#### Вариант C: Через curl (если установлен)
-
-```bash
-curl -X POST "https://api.telegram.org/botВАШ_ТОКЕН/setWebhook" \
-  -d "url=https://history-character.up.railway.app/api/telegram/webhook"
-```
-
-### Шаг 4: Проверьте, что бот существует
-
-Выполните запрос (замените `ВАШ_ТОКЕН`):
-
+Откройте в браузере (замените `ВАШ_ТОКЕН`):
 ```
 https://api.telegram.org/botВАШ_ТОКЕН/getMe
 ```
 
-Должны увидеть:
+**Должно вернуться:**
 ```json
 {
   "ok": true,
   "result": {
     "id": 123456789,
     "is_bot": true,
-    "first_name": "Имя вашего бота",
-    "username": "имя_бота"
+    "first_name": "Your Bot",
+    "username": "your_bot"
   }
 }
 ```
 
-Если получаете 404 здесь — токен неправильный.
+**Если вернулось 404:**
+- Токен неправильный
+- Бот удален
+- Нужно получить новый токен
 
-## Частые ошибки
+### Шаг 2: Проверьте текущий webhook
 
-### ❌ Ошибка 1: Пробелы в токене
-
-**Неправильно:**
+Откройте в браузере (замените `ВАШ_ТОКЕН`):
 ```
-https://api.telegram.org/bot 1234567890:ABC... /setWebhook
-```
-
-**Правильно:**
-```
-https://api.telegram.org/bot1234567890:ABC.../setWebhook
+https://api.telegram.org/botВАШ_ТОКЕН/getWebhookInfo
 ```
 
-### ❌ Ошибка 2: Неправильный формат URL
+Это покажет текущий статус webhook.
 
-**Неправильно:**
-```
-https://api.telegram.org/bot/setWebhook?token=ВАШ_ТОКЕН&url=...
-```
+## 📝 Пошаговая инструкция
 
-**Правильно:**
-```
-https://api.telegram.org/botВАШ_ТОКЕН/setWebhook?url=...
-```
+1. **Получите токен:**
+   - Railway → Variables → `TELEGRAM_BOT_TOKEN_BASE` или `TELEGRAM_BOT_TOKEN`
+   - Скопируйте полностью
 
-### ❌ Ошибка 3: Токен от другого бота
+2. **Проверьте токен:**
+   - Откройте: `https://api.telegram.org/botВАШ_ТОКЕН/getMe`
+   - Должен вернуться `{"ok":true,...}`
 
-Убедитесь, что используете токен именно того бота, который должен обрабатывать команды.
-
-## Проверка после исправления
-
-1. **Проверьте webhook:**
-   ```
-   https://api.telegram.org/botВАШ_ТОКЕН/getWebhookInfo
-   ```
-
-2. **Проверьте диагностику:**
-   ```
-   https://history-character.up.railway.app/api/telegram/debug
-   ```
-
-3. **Отправьте боту `/start`** — бот должен ответить
-
-## Если ничего не помогает
-
-1. **Создайте нового бота:**
+3. **Если токен не работает:**
    - Откройте [@BotFather](https://t.me/BotFather)
-   - Отправьте `/newbot`
-   - Следуйте инструкциям
-   - Получите новый токен
+   - Отправьте `/mybots`
+   - Выберите вашего бота
+   - Если бот не найден, создайте нового через `/newbot`
 
-2. **Обновите токен в Railway:**
-   - Перейдите в Variables
-   - Обновите `TELEGRAM_BOT_TOKEN_BASE` или `TELEGRAM_BOT_TOKEN`
-   - Сохраните
+4. **Обновите webhook:**
+   - Откройте: `https://api.telegram.org/botВАШ_ТОКЕН/setWebhook?url=https://history-character.up.railway.app/api/telegram/webhook`
+   - Должен вернуться `{"ok":true,"result":true}`
 
-3. **Обновите webhook с новым токеном**
+5. **Проверьте результат:**
+   - Откройте: `https://api.telegram.org/botВАШ_ТОКЕН/getWebhookInfo`
+   - `result.url` должен быть правильным
 
----
+## 💡 Полезные ссылки
 
-**Удачи! 🚀**
+- [BotFather](https://t.me/BotFather) - для управления ботами
+- [Telegram Bot API](https://core.telegram.org/bots/api) - документация API
+- Диагностика: `https://history-character.up.railway.app/api/telegram/debug`

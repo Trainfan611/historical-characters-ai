@@ -25,6 +25,8 @@ export async function sendTelegramMessage(chatId: string, text: string, parseMod
       hasToken: !!TELEGRAM_BOT_TOKEN_BASE,
       tokenLength: TELEGRAM_BOT_TOKEN_BASE.length,
       tokenPreview: maskedToken,
+      textLength: text.length,
+      parseMode,
     });
 
     const response = await axios.post(
@@ -33,11 +35,34 @@ export async function sendTelegramMessage(chatId: string, text: string, parseMod
         chat_id: chatId,
         text,
         parse_mode: parseMode,
+      },
+      {
+        timeout: 10000,
       }
     );
+    
+    console.log('[Telegram Bot] Message sent successfully', {
+      chatId,
+      messageId: response.data.result?.message_id,
+    });
+    
     return response.data;
   } catch (error: any) {
-    console.error('[Telegram Bot] Error sending message:', error.response?.data || error.message);
+    const errorDetails = {
+      chatId,
+      error: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+    };
+    
+    console.error('[Telegram Bot] Error sending message:', errorDetails);
+    
+    // Логируем детали ошибки для диагностики
+    if (error.response?.data) {
+      console.error('[Telegram Bot] Telegram API error:', JSON.stringify(error.response.data, null, 2));
+    }
+    
     return null;
   }
 }
@@ -45,12 +70,24 @@ export async function sendTelegramMessage(chatId: string, text: string, parseMod
 /**
  * Генерирует ссылку на админ-панель и отправляет её в Telegram
  */
-export async function sendAdminLink(chatId: string) {
-  const isAdmin = TELEGRAM_ADMIN_ID && chatId === TELEGRAM_ADMIN_ID;
+export async function sendAdminLink(chatId: string, fromId?: string) {
+  // Проверяем админа по chatId или fromId
+  const isAdmin = TELEGRAM_ADMIN_ID && (
+    chatId === TELEGRAM_ADMIN_ID || 
+    (fromId && fromId === TELEGRAM_ADMIN_ID)
+  );
+  
+  console.log('[Telegram Bot] Checking admin status for link:', {
+    chatId,
+    fromId,
+    adminId: TELEGRAM_ADMIN_ID,
+    isAdmin,
+  });
   
   if (!isAdmin) {
     console.log('[Telegram Bot] Admin link requested by non-admin:', {
       chatId,
+      fromId,
       adminId: TELEGRAM_ADMIN_ID,
     });
     return { success: false, error: 'Unauthorized' };
@@ -81,13 +118,25 @@ export async function sendAdminLink(chatId: string) {
 /**
  * Отправляет краткую статистику по базе для админа
  */
-export async function sendAdminStats(chatId: string) {
+export async function sendAdminStats(chatId: string, fromId?: string) {
   // Проверяем, что пользователь - админ (по chatId или по from.id)
-  const isAdmin = TELEGRAM_ADMIN_ID && chatId === TELEGRAM_ADMIN_ID;
+  // В приватных чатах chatId и fromId одинаковые, в группах - разные
+  const isAdmin = TELEGRAM_ADMIN_ID && (
+    chatId === TELEGRAM_ADMIN_ID || 
+    (fromId && fromId === TELEGRAM_ADMIN_ID)
+  );
+  
+  console.log('[Telegram Bot] Checking admin status for stats:', {
+    chatId,
+    fromId,
+    adminId: TELEGRAM_ADMIN_ID,
+    isAdmin,
+  });
   
   if (!isAdmin) {
     console.log('[Telegram Bot] Stats requested by non-admin:', {
       chatId,
+      fromId,
       adminId: TELEGRAM_ADMIN_ID,
     });
     
@@ -163,12 +212,8 @@ export async function handleTelegramCommand(update: any) {
 
   // Команда: /admin — отправка ссылки на админ-панель
   if (text === '/admin' || text.startsWith('/admin ')) {
-    const isAdmin = TELEGRAM_ADMIN_ID && (chatId === TELEGRAM_ADMIN_ID || fromId === TELEGRAM_ADMIN_ID);
-    if (isAdmin) {
-      console.log('[Telegram Bot] Admin link requested by admin');
-      await sendAdminLink(chatId);
-    } else {
-      console.log('[Telegram Bot] Admin link requested by non-admin');
+    const result = await sendAdminLink(chatId, fromId);
+    if (!result.success) {
       await sendTelegramMessage(chatId, '❌ У вас нет доступа к этой команде.');
     }
     return;
@@ -177,7 +222,7 @@ export async function handleTelegramCommand(update: any) {
   // Команда: /start — краткая статистика по базе (для админа)
   if (text === '/start' || text.startsWith('/start ')) {
     console.log('[Telegram Bot] /start command received');
-    await sendAdminStats(chatId);
+    await sendAdminStats(chatId, fromId);
     return;
   }
 

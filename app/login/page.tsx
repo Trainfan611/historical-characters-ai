@@ -1,36 +1,47 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { TelegramLogin } from '@/components/auth/TelegramLogin';
 
-export default function LoginPage() {
+function LoginContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     // Если пользователь уже авторизован, перенаправляем на страницу генерации
-    if (status === 'authenticated' && session) {
-      router.push('/generate');
+    if (status === 'authenticated' && session && !isRedirecting) {
+      setIsRedirecting(true);
+      const callbackUrl = searchParams.get('callbackUrl') || '/generate';
+      router.push(callbackUrl);
     }
-  }, [status, session, router]);
+  }, [status, session, router, searchParams, isRedirecting]);
 
   // Показываем загрузку, пока проверяем сессию
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
       </div>
     );
   }
 
-  // Если пользователь уже авторизован, не показываем страницу входа
+  // Если пользователь уже авторизован, показываем загрузку во время редиректа
   if (status === 'authenticated') {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Перенаправление...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -64,5 +75,17 @@ export default function LoginPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

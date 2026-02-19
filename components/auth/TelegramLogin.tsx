@@ -68,7 +68,7 @@ export function TelegramLogin() {
         containerRef.current.innerHTML = '';
       }
     };
-  }, [router]);
+  }, []);
 
   return <div ref={containerRef} />;
 }

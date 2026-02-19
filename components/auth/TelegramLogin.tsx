@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 
 declare global {
   interface Window {
@@ -12,7 +11,6 @@ declare global {
 
 export function TelegramLogin() {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
     window.onTelegramAuth = async (user: any) => {
@@ -30,16 +28,20 @@ export function TelegramLogin() {
         });
 
         if (result?.error) {
-          console.error('Login error:', result.error);
+          console.error('[TelegramLogin] Login error:', result.error);
+          alert('Ошибка входа. Попробуйте еще раз.');
           return;
         }
 
-        // Успешный логин — сразу отправляем на страницу генерации
+        // Успешный логин — используем полную перезагрузку для гарантированного обновления сессии
         if (result?.ok !== false) {
-          router.push('/generate');
+          console.log('[TelegramLogin] Login successful, redirecting to /generate');
+          // Используем window.location для полной перезагрузки и обновления сессии
+          window.location.href = '/generate';
         }
       } catch (error) {
-        console.error('Login error:', error);
+        console.error('[TelegramLogin] Login error:', error);
+        alert('Ошибка входа. Попробуйте еще раз.');
       }
     };
 

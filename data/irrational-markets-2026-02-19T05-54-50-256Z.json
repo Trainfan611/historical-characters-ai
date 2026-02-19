@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-02-19T05:54:50.257Z",
+  "totalMarkets": 5,
+  "irrationalCount": 3,
+  "overpricedCount": 1,
+  "underpricedCount": 2,
+  "markets": [
+    {
+      "question": "Will Bitcoin hit $100k by end of 2024?",
+      "slug": "bitcoin-100k-2024",
+      "url": "https://polymarket.com/event/bitcoin-100k-2024",
+      "price": 0.985,
+      "volume": 15468.68,
+      "liquidity": 45,
+      "category": "Crypto",
+      "irrationalityScore": 95,
+      "isOverpriced": true,
+      "isUnderpriced": false,
+      "reasons": [
+        "⬆️ Цена слишком высокая (98.50%) при объеме $15469",
+        "🔺 КРИТИЧЕСКИ высокая цена (98.50%)",
+        "💧 Низкая ликвидность ($45) при экстремальной цене",
+        "⚠️ Высокий объем ($15469) при подозрительной цене - возможна манипуляция"
+      ],
+      "endDate": "2024-12-31T00:00:00.000Z"
+    },
+    {
+      "question": "Will Ethereum reach $5000?",
+      "slug": "ethereum-5000",
+      "url": "https://polymarket.com/event/ethereum-5000",
+      "price": 0.012,
+      "volume": 19469.12,
+      "liquidity": 25,
+      "category": "Crypto",
+      "irrationalityScore": 95,
+      "isOverpriced": false,
+      "isUnderpriced": true,
+      "reasons": [
+        "⬇️ Цена слишком низкая (1.20%) при объеме $19469",
+        "🔻 КРИТИЧЕСКИ низкая цена (1.20%)",
+        "💧 Низкая ликвидность ($25) при экстремальной цене",
+        "⚠️ Высокий объем ($19469) при подозрительной цене - возможна манипуляция"
+      ],
+      "endDate": "2024-06-30T00:00:00.000Z"
+    },
+    {
+      "question": "Will Trump win 2024 election?",
+      "slug": "trump-2024-election",
+      "url": "https://polymarket.com/event/trump-2024-election",
+      "price": 0.025,
+      "volume": 35458.34,
+      "liquidity": 120.5,
+      "category": "Politics",
+      "irrationalityScore": 50,
+      "isOverpriced": false,
+      "isUnderpriced": true,
+      "reasons": [
+        "⬇️ Цена слишком низкая (2.50%) при объеме $35458",
+        "⚠️ Высокий объем ($35458) при подозрительной цене - возможна манипуляция"
+      ],
+      "endDate": "2024-11-05T00:00:00.000Z"
+    }
+  ]
+}

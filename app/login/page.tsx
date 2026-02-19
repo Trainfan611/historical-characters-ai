@@ -19,9 +19,10 @@ function LoginContent() {
     if (status === 'authenticated' && session && !isRedirecting) {
       setIsRedirecting(true);
       const callbackUrl = searchParams.get('callbackUrl') || '/generate';
-      router.push(callbackUrl);
+      // Используем window.location для надежного редиректа
+      window.location.href = callbackUrl;
     }
-  }, [status, session, router, searchParams, isRedirecting]);
+  }, [status, session, searchParams, isRedirecting]);
 
   // Показываем загрузку, пока проверяем сессию
   if (status === 'loading') {

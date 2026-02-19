@@ -14,6 +14,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "admin:make": "tsx scripts/make-admin.ts",
+    "polymarket:irrational": "tsx scripts/find-irrational-polymarket.ts",
     "railway:setup": "node scripts/setup-railway.js",
     "postinstall": "prisma generate",
     "railway": "npm run build"

@@ -42,9 +42,9 @@ export function Header() {
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
-                className="px-3 py-1.5 text-[11px] sm:text-xs bg-slate-900 border border-slate-700 text-slate-200 hover:border-slate-500 rounded-full transition-colors"
+                className="px-4 py-1.5 text-[11px] sm:text-xs bg-sky-400 text-slate-950 font-medium rounded-full hover:bg-sky-300 transition-colors"
               >
-                Выйти
+                Сменить аккаунт
               </button>
             </>
           ) : (
@@ -52,7 +52,7 @@ export function Header() {
               href="/login"
               className="px-4 py-1.5 text-[11px] sm:text-xs bg-sky-400 text-slate-950 font-medium rounded-full hover:bg-sky-300 transition-colors"
             >
-              Сменить аккаунт
+              Войти через Telegram
             </Link>
           )}
         </nav>

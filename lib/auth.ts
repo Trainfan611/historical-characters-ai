@@ -18,6 +18,23 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials) {
+          console.error('[Auth] No credentials provided');
+          return null;
+        }
+
+        // Проверка конфигурации
+        if (!process.env.DATABASE_URL) {
+          console.error('[Auth] DATABASE_URL is not configured');
+          return null;
+        }
+
+        // Валидация обязательных полей
+        if (!credentials.id || !credentials.hash || !credentials.auth_date) {
+          console.error('[Auth] Missing required fields:', {
+            hasId: !!credentials.id,
+            hasHash: !!credentials.hash,
+            hasAuthDate: !!credentials.auth_date,
+          });
           return null;
         }
 
@@ -39,17 +56,17 @@ export const authOptions: NextAuthOptions = {
           hash: credentials.hash,
           first_name: credentials.first_name || '',
           auth_date: credentials.auth_date,
-          ...(credentials.username && { username: credentials.username }),
-          ...(credentials.last_name && { last_name: credentials.last_name }),
-          ...(credentials.photo_url && { photo_url: credentials.photo_url }),
+          ...(credentials.username && credentials.username.trim() && { username: credentials.username.trim() }),
+          ...(credentials.last_name && credentials.last_name.trim() && { last_name: credentials.last_name.trim() }),
+          ...(credentials.photo_url && credentials.photo_url.trim() && { photo_url: credentials.photo_url.trim() }),
         };
 
         // TODO: в продакшене обязательно включите строгую проверку подписи Telegram.
         // Временное упрощение: если verifyTelegramData возвращает false или выбрасывает ошибку,
         // всё равно продолжаем логин, чтобы упростить отладку.
         try {
-        const isValid = verifyTelegramData(telegramData);
-        if (!isValid) {
+          const isValid = verifyTelegramData(telegramData);
+          if (!isValid) {
             console.warn('[Auth] Telegram data verification failed for id:', credentials.id);
           }
         } catch (e) {
@@ -57,31 +74,66 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Создание или обновление пользователя в БД
-        const user = await prisma.user.upsert({
-          where: { telegramId: credentials.id },
-          update: {
-            username: credentials.username || null,
-            firstName: credentials.first_name || null,
-            lastName: credentials.last_name || null,
-            photoUrl: credentials.photo_url || null,
-          },
-          create: {
-            telegramId: credentials.id,
-            username: credentials.username || null,
-            firstName: credentials.first_name || null,
-            lastName: credentials.last_name || null,
-            photoUrl: credentials.photo_url || null,
-            isSubscribed: false,
-          },
-        });
+        try {
+          const user = await prisma.user.upsert({
+            where: { telegramId: credentials.id },
+            update: {
+              username: credentials.username?.trim() || null,
+              firstName: credentials.first_name?.trim() || null,
+              lastName: credentials.last_name?.trim() || null,
+              photoUrl: credentials.photo_url?.trim() || null,
+            },
+            create: {
+              telegramId: credentials.id,
+              username: credentials.username?.trim() || null,
+              firstName: credentials.first_name?.trim() || null,
+              lastName: credentials.last_name?.trim() || null,
+              photoUrl: credentials.photo_url?.trim() || null,
+              isSubscribed: false,
+            },
+          });
 
-        return {
-          id: user.id,
-          telegramId: user.telegramId,
-          name: user.firstName || user.username || 'User',
-          email: user.username ? `${user.username}@telegram` : null,
-          image: user.photoUrl || null,
-        };
+          console.log('[Auth] User created/updated successfully:', user.id);
+
+          return {
+            id: user.id,
+            telegramId: user.telegramId,
+            name: user.firstName || user.username || 'User',
+            email: user.username ? `${user.username}@telegram` : null,
+            image: user.photoUrl || null,
+          };
+        } catch (error: any) {
+          console.error('[Auth] Database error during user upsert:', {
+            error: error.message,
+            code: error.code,
+            telegramId: credentials.id,
+          });
+
+          // Если ошибка уникальности (дубликат telegramId), пробуем найти существующего пользователя
+          if (error.code === 'P2002' || error.message?.includes('Unique constraint')) {
+            try {
+              const existingUser = await prisma.user.findUnique({
+                where: { telegramId: credentials.id },
+              });
+
+              if (existingUser) {
+                console.log('[Auth] Found existing user after unique constraint error:', existingUser.id);
+                return {
+                  id: existingUser.id,
+                  telegramId: existingUser.telegramId,
+                  name: existingUser.firstName || existingUser.username || 'User',
+                  email: existingUser.username ? `${existingUser.username}@telegram` : null,
+                  image: existingUser.photoUrl || null,
+                };
+              }
+            } catch (findError) {
+              console.error('[Auth] Error finding existing user:', findError);
+            }
+          }
+
+          // Для других ошибок БД возвращаем null
+          return null;
+        }
       },
     }),
   ],

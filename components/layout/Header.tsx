@@ -52,7 +52,7 @@ export function Header() {
               href="/login"
               className="px-4 py-1.5 text-[11px] sm:text-xs bg-sky-400 text-slate-950 font-medium rounded-full hover:bg-sky-300 transition-colors"
             >
-              Войти через Telegram
+              Сменить аккаунт
             </Link>
           )}
         </nav>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import axios from 'axios';
@@ -92,12 +93,12 @@ export default function ProfilePage() {
             {session.user?.email && (
               <p className="text-sm text-gray-500 mt-1">{session.user.email}</p>
             )}
-            <button
-              onClick={() => signOut({ callbackUrl: '/login' })}
-              className="mt-4 w-full px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors text-sm font-medium"
+            <Link
+              href="/change-account"
+              className="mt-4 block w-full text-center px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors text-sm font-medium"
             >
               Сменить аккаунт Telegram
-            </button>
+            </Link>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">

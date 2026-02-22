@@ -40,12 +40,12 @@ export function Header() {
               >
                 Профиль
               </Link>
-              <button
-                onClick={() => signOut({ callbackUrl: '/login' })}
+              <Link
+                href="/change-account"
                 className="px-4 py-1.5 text-[11px] sm:text-xs bg-sky-400 text-slate-950 font-medium rounded-full hover:bg-sky-300 transition-colors"
               >
                 Сменить аккаунт
-              </button>
+              </Link>
             </>
           ) : (
             <Link

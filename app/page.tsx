@@ -84,12 +84,6 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="pt-4 text-[11px] text-slate-500">
-              <p>
-                Портреты времён — проект, вдохновлённый идеей Book
-                Vision, но посвящённый героям реальной истории.
-              </p>
-            </div>
           </div>
         </section>
       </main>

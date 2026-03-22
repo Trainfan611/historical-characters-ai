@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Historical Characters AI - Генерация изображений исторических личностей",
+  title: "Портреты времён — Генерация изображений исторических личностей",
   description: "Создавайте реалистичные изображения исторических личностей с помощью AI",
   icons: {
     icon: '/icon.svg',

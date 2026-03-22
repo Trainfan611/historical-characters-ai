@@ -12,7 +12,7 @@ export function Header() {
         <Link href="/" className="flex items-center gap-2">
           <span className="text-sky-300 text-base sm:text-lg">✦</span>
           <span className="text-base sm:text-lg font-semibold tracking-tight text-slate-50">
-            Historical Characters
+            Портреты времён
           </span>
         </Link>
 

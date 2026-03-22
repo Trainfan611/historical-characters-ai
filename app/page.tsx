@@ -86,7 +86,7 @@ export default function Home() {
 
             <div className="pt-4 text-[11px] text-slate-500">
               <p>
-                Historical Characters AI — проект, вдохновлённый идеей Book
+                Портреты времён — проект, вдохновлённый идеей Book
                 Vision, но посвящённый героям реальной истории.
               </p>
             </div>

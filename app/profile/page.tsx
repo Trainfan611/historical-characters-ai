@@ -121,10 +121,24 @@ export default function ProfilePage() {
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-2">Подписка и лимиты</h2>
+            <h2 className="text-lg font-semibold mb-2">Тарифы</h2>
             <p className={`font-semibold ${subscriptionStatus?.isSubscribed ? 'text-green-600' : 'text-red-600'}`}>
               {subscriptionStatus?.isSubscribed ? 'Доступ к генерации активен' : 'Доступ к генерации не активен'}
             </p>
+            <div className="mt-3 space-y-2 text-sm">
+              <div className="rounded-md border border-gray-200 px-3 py-2">
+                <p className="font-semibold text-gray-900">Free</p>
+                <p className="text-gray-600">Базовый тариф: до 15 генераций в день</p>
+              </div>
+              <div className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2">
+                <p className="font-semibold text-sky-900">Pro</p>
+                <p className="text-sky-700">100 генераций в день за 599 ₽/мес</p>
+              </div>
+              <div className="rounded-md border border-purple-200 bg-purple-50 px-3 py-2">
+                <p className="font-semibold text-purple-900">B2B</p>
+                <p className="text-purple-700">Индивидуальный лимит и условия для команд</p>
+              </div>
+            </div>
             {!subscriptionStatus?.isSubscribed && (
               <button
                 onClick={checkSubscription}
@@ -135,20 +149,19 @@ export default function ProfilePage() {
             )}
             {subscriptionStatus?.isSubscribed && (
               <div className="mt-3 space-y-2">
-                <p className="text-sm text-gray-600">Pro: 100 генераций в день за 599 ₽/мес</p>
                 <button
                   onClick={() => requestPaidPlan('pro100')}
                   disabled={isSendingPlanRequest}
                   className="w-full px-3 py-2 bg-sky-500 text-white text-sm rounded hover:bg-sky-600 disabled:opacity-60"
                 >
-                  Подключить Pro 100
+                  Подключить тариф Pro
                 </button>
                 <button
                   onClick={() => requestPaidPlan('custom')}
                   disabled={isSendingPlanRequest}
                   className="w-full px-3 py-2 bg-slate-700 text-white text-sm rounded hover:bg-slate-800 disabled:opacity-60"
                 >
-                  Запросить больше 100/день
+                  Подключить тариф B2B
                 </button>
               </div>
             )}

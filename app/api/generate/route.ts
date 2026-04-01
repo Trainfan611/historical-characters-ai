@@ -11,6 +11,7 @@ import { rateLimit, rateLimitConfigs } from '@/lib/rate-limit-simple';
 import { generateImageSchema } from '@/lib/validation';
 import { getUserSafe } from '@/lib/user-safe';
 import { extractPersonName, extractAdditionalInfo, getFullNameForGeneration } from '@/lib/person-name-utils';
+import { getDailyLimitForUser, getUserPlan } from '@/lib/subscription';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +35,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Проверка лимита генераций (15 в день)
+    const userTelegramId = (session.user as any).telegramId as string | undefined;
+    const userPlan = getUserPlan(userTelegramId, dbUser.isSubscribed);
+    const dailyLimit = getDailyLimitForUser(userTelegramId, dbUser.isSubscribed);
+
+    // Проверка лимита генераций по активному тарифу
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
     
@@ -48,15 +53,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const DAILY_LIMIT = 15;
-    if (todayGenerations >= DAILY_LIMIT) {
+    if (todayGenerations >= dailyLimit) {
       return NextResponse.json(
         { 
           error: 'Daily generation limit reached',
           code: 'DAILY_LIMIT_REACHED',
-          limit: DAILY_LIMIT,
+          limit: dailyLimit,
           used: todayGenerations,
           remaining: 0,
+          plan: userPlan?.id || 'free',
         },
         { status: 429 }
       );

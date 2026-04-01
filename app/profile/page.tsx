@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     isSubscribed: boolean;
   } | null>(null);
+  const [isSendingPlanRequest, setIsSendingPlanRequest] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -62,6 +63,19 @@ export default function ProfilePage() {
     } catch (error) {
       console.error('Error deleting generation:', error);
       alert('Ошибка при удалении');
+    }
+  };
+
+  const requestPaidPlan = async (requestedPlan: 'pro100' | 'custom') => {
+    setIsSendingPlanRequest(true);
+    try {
+      const response = await axios.post('/api/subscription/request', { requestedPlan });
+      const contact = response.data.contactForCustom || '@manager';
+      alert(`Заявка отправлена. Мы свяжемся с вами в Telegram. Контакт: ${contact}`);
+    } catch (error) {
+      alert('Не удалось отправить заявку. Попробуйте позже.');
+    } finally {
+      setIsSendingPlanRequest(false);
     }
   };
 
@@ -107,9 +121,9 @@ export default function ProfilePage() {
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-2">Подписка Free</h2>
+            <h2 className="text-lg font-semibold mb-2">Подписка и лимиты</h2>
             <p className={`font-semibold ${subscriptionStatus?.isSubscribed ? 'text-green-600' : 'text-red-600'}`}>
-              {subscriptionStatus?.isSubscribed ? 'Активна' : 'Не активна'}
+              {subscriptionStatus?.isSubscribed ? 'Доступ к генерации активен' : 'Доступ к генерации не активен'}
             </p>
             {!subscriptionStatus?.isSubscribed && (
               <button
@@ -118,6 +132,25 @@ export default function ProfilePage() {
               >
                 Проверить подписку
               </button>
+            )}
+            {subscriptionStatus?.isSubscribed && (
+              <div className="mt-3 space-y-2">
+                <p className="text-sm text-gray-600">Pro: 100 генераций в день за 599 ₽/мес</p>
+                <button
+                  onClick={() => requestPaidPlan('pro100')}
+                  disabled={isSendingPlanRequest}
+                  className="w-full px-3 py-2 bg-sky-500 text-white text-sm rounded hover:bg-sky-600 disabled:opacity-60"
+                >
+                  Подключить Pro 100
+                </button>
+                <button
+                  onClick={() => requestPaidPlan('custom')}
+                  disabled={isSendingPlanRequest}
+                  className="w-full px-3 py-2 bg-slate-700 text-white text-sm rounded hover:bg-slate-800 disabled:opacity-60"
+                >
+                  Запросить больше 100/день
+                </button>
+              </div>
             )}
           </div>
         </div>

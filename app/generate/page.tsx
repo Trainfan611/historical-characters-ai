@@ -27,7 +27,15 @@ export default function GeneratePage() {
     used: number;
     remaining: number;
     isLimitReached: boolean;
+    plan?: string | null;
+    planName?: string | null;
+    priceRubPerMonth?: number | null;
+    contactForCustom?: string | null;
   } | null>(null);
+  const [plansData, setPlansData] = useState<{
+    contactForCustom: string;
+  } | null>(null);
+  const [isSendingPlanRequest, setIsSendingPlanRequest] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
@@ -37,6 +45,7 @@ export default function GeneratePage() {
       checkSubscription();
       fetchChannelLink();
       fetchGenerationLimit();
+      fetchPlans();
     }
   }, [status, router]);
 
@@ -57,6 +66,31 @@ export default function GeneratePage() {
       setGenerationLimit(response.data);
     } catch (error) {
       console.error('Error fetching generation limit:', error);
+    }
+  };
+
+  const fetchPlans = async () => {
+    try {
+      const response = await axios.get('/api/subscription/plans');
+      setPlansData({
+        contactForCustom: response.data.contactForCustom || '@manager',
+      });
+    } catch (error) {
+      console.error('Error fetching plans:', error);
+    }
+  };
+
+  const requestPlan = async (requestedPlan: 'pro100' | 'custom') => {
+    setIsSendingPlanRequest(true);
+    try {
+      const response = await axios.post('/api/subscription/request', { requestedPlan });
+      const contact = response.data.contactForCustom || plansData?.contactForCustom || '@manager';
+      setError(`Заявка отправлена. Мы свяжемся с вами в Telegram. Для ускорения можно написать ${contact}`);
+    } catch (error: any) {
+      const details = error.response?.data?.details || error.response?.data?.error;
+      setError(details || 'Не удалось отправить заявку на подписку. Попробуйте ещё раз.');
+    } finally {
+      setIsSendingPlanRequest(false);
     }
   };
 
@@ -240,11 +274,50 @@ export default function GeneratePage() {
               <span className="text-amber-100 text-sm">
                 {generationLimit.remaining} из {generationLimit.limit} генераций сегодня
               </span>
+              {generationLimit.planName && (
+                <span className="text-amber-300 text-xs ml-2">
+                  (тариф: {generationLimit.planName})
+                </span>
+              )}
               {generationLimit.isLimitReached && (
                 <span className="text-amber-300 text-xs ml-2">
                   (Лимит обновится завтра)
                 </span>
               )}
+            </div>
+          </div>
+        )}
+
+        {subscriptionStatus?.isSubscribed && (
+          <div className="mb-6 flex justify-center">
+            <div className="w-full max-w-3xl bg-sky-900/20 border border-sky-500/40 rounded-xl px-6 py-4 text-center">
+              <p className="text-sky-100 text-sm">
+                Подписка для увеличения лимита: <strong>100 генераций/день за 599 ₽</strong>
+              </p>
+              <p className="text-sky-200/80 text-xs mt-1">
+                Нужен лимит выше 100/день? Подключим индивидуально по запросу.
+              </p>
+              <div className="mt-3 flex flex-col sm:flex-row gap-2 justify-center">
+                <button
+                  type="button"
+                  onClick={() => requestPlan('pro100')}
+                  disabled={isSendingPlanRequest}
+                  className="px-4 py-2 text-xs rounded-full bg-sky-400 text-slate-950 font-semibold hover:bg-sky-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  Подключить 100/день за 599 ₽
+                </button>
+                <button
+                  type="button"
+                  onClick={() => requestPlan('custom')}
+                  disabled={isSendingPlanRequest}
+                  className="px-4 py-2 text-xs rounded-full bg-slate-700 text-slate-100 font-semibold hover:bg-slate-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  Больше генераций — по запросу
+                </button>
+              </div>
+              <p className="text-slate-400 text-xs mt-2">
+                Контакт: {generationLimit?.contactForCustom || plansData?.contactForCustom || '@manager'}
+              </p>
             </div>
           </div>
         )}

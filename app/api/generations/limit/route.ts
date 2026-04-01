@@ -4,8 +4,8 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getCache, setCache } from '@/lib/cache-simple';
 import { getUserSafe } from '@/lib/user-safe';
+import { getDailyLimitForUser, getSalesContact, getUserPlan } from '@/lib/subscription';
 
-const DAILY_LIMIT = 15;
 const CACHE_TTL = 60 * 1000; // 1 минута
 
 export async function GET(request: NextRequest) {
@@ -23,15 +23,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Проверяем кэш
-    const cacheKey = `limit:${dbUser.id}`;
+    const userTelegramId = (session.user as any).telegramId as string | undefined;
+    const plan = getUserPlan(userTelegramId, dbUser.isSubscribed);
+    const dailyLimit = getDailyLimitForUser(userTelegramId, dbUser.isSubscribed);
+    const cacheKey = `limit:${dbUser.id}:${plan?.id || 'none'}`;
     const cached = getCache<{ used: number; remaining: number; isLimitReached: boolean }>(cacheKey);
     
     if (cached) {
       return NextResponse.json({
-        limit: DAILY_LIMIT,
+        limit: dailyLimit,
         used: cached.used,
         remaining: cached.remaining,
         isLimitReached: cached.isLimitReached,
+        plan: plan?.id || null,
+        planName: plan?.name || null,
+        priceRubPerMonth: plan?.priceRubPerMonth || null,
+        contactForCustom: getSalesContact(),
         cached: true,
       });
     }
@@ -51,18 +58,22 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const remaining = Math.max(0, DAILY_LIMIT - todayGenerations);
+    const remaining = Math.max(0, dailyLimit - todayGenerations);
     const used = todayGenerations;
-    const isLimitReached = todayGenerations >= DAILY_LIMIT;
+    const isLimitReached = todayGenerations >= dailyLimit;
     
     // Сохраняем в кэш
     setCache(cacheKey, { used, remaining, isLimitReached }, CACHE_TTL);
 
     return NextResponse.json({
-      limit: DAILY_LIMIT,
+      limit: dailyLimit,
       used,
       remaining,
-      isLimitReached: todayGenerations >= DAILY_LIMIT,
+      isLimitReached,
+      plan: plan?.id || null,
+      planName: plan?.name || null,
+      priceRubPerMonth: plan?.priceRubPerMonth || null,
+      contactForCustom: getSalesContact(),
     });
   } catch (error) {
     console.error('Error getting generation limit:', error);

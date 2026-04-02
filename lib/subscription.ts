@@ -61,5 +61,5 @@ export function getDailyLimitForUser(telegramId: string | undefined, isChannelSu
 }
 
 export function getSalesContact(): string {
-  return process.env.SUBSCRIPTION_SALES_CONTACT || '@manager';
+  return process.env.SUBSCRIPTION_SALES_CONTACT || '@Martynov_DA';
 }

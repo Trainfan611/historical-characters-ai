@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     isSubscribed: boolean;
   } | null>(null);
+  const [tariffLabel, setTariffLabel] = useState<string | null>(null);
   const [isSendingPlanRequest, setIsSendingPlanRequest] = useState(false);
 
   useEffect(() => {
@@ -30,7 +31,7 @@ export default function ProfilePage() {
       router.push('/login');
     } else if (status === 'authenticated') {
       fetchGenerations();
-      checkSubscription();
+      loadSubscriptionAndTariff();
     }
   }, [status, router]);
 
@@ -45,10 +46,54 @@ export default function ProfilePage() {
     }
   };
 
+  function planIdToDisplayName(plan: string | null, planName: string | null): string {
+    if (plan === 'pro100') return 'Pro';
+    if (plan === 'free') return 'Free';
+    if (planName) return planName;
+    return '—';
+  }
+
+  const loadSubscriptionAndTariff = async () => {
+    try {
+      const [subRes, limitRes] = await Promise.all([
+        axios.get('/api/subscription/check'),
+        axios.get('/api/generations/limit').catch(() => null),
+      ]);
+      setSubscriptionStatus(subRes.data);
+      const isSubscribed = subRes.data?.isSubscribed;
+      if (!isSubscribed) {
+        setTariffLabel('не подключён');
+        return;
+      }
+      if (!limitRes?.data) {
+        setTariffLabel('—');
+        return;
+      }
+      const plan = limitRes.data?.plan as string | null | undefined;
+      const planName = limitRes.data?.planName as string | null | undefined;
+      setTariffLabel(planIdToDisplayName(plan ?? null, planName ?? null));
+    } catch (error) {
+      console.error('Error loading subscription/tariff:', error);
+      setTariffLabel('—');
+    }
+  };
+
   const checkSubscription = async () => {
     try {
       const response = await axios.get('/api/subscription/check');
       setSubscriptionStatus(response.data);
+      if (!response.data?.isSubscribed) {
+        setTariffLabel('не подключён');
+        return;
+      }
+      try {
+        const limitRes = await axios.get('/api/generations/limit');
+        const plan = limitRes.data?.plan as string | null | undefined;
+        const planName = limitRes.data?.planName as string | null | undefined;
+        setTariffLabel(planIdToDisplayName(plan ?? null, planName ?? null));
+      } catch {
+        setTariffLabel('—');
+      }
     } catch (error) {
       console.error('Error checking subscription:', error);
     }
@@ -70,7 +115,7 @@ export default function ProfilePage() {
     setIsSendingPlanRequest(true);
     try {
       const response = await axios.post('/api/subscription/request', { requestedPlan });
-      const contact = response.data.contactForCustom || '@manager';
+      const contact = response.data.contactForCustom || '@Martynov_DA';
       alert(`Заявка отправлена. Мы свяжемся с вами в Telegram. Контакт: ${contact}`);
     } catch (error) {
       alert('Не удалось отправить заявку. Попробуйте позже.');
@@ -123,7 +168,7 @@ export default function ProfilePage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-2">Тарифы</h2>
             <p className={`font-semibold ${subscriptionStatus?.isSubscribed ? 'text-green-600' : 'text-red-600'}`}>
-              {subscriptionStatus?.isSubscribed ? 'Доступ к генерации активен' : 'Доступ к генерации не активен'}
+              Тариф: {tariffLabel ?? '…'}
             </p>
             <div className="mt-3 space-y-2 text-sm">
               <div className="rounded-md border border-gray-200 px-3 py-2">

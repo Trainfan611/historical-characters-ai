@@ -73,7 +73,7 @@ export default function GeneratePage() {
     try {
       const response = await axios.get('/api/subscription/plans');
       setPlansData({
-        contactForCustom: response.data.contactForCustom || '@manager',
+        contactForCustom: response.data.contactForCustom || '@Martynov_DA',
       });
     } catch (error) {
       console.error('Error fetching plans:', error);
@@ -84,7 +84,7 @@ export default function GeneratePage() {
     setIsSendingPlanRequest(true);
     try {
       const response = await axios.post('/api/subscription/request', { requestedPlan });
-      const contact = response.data.contactForCustom || plansData?.contactForCustom || '@manager';
+      const contact = response.data.contactForCustom || plansData?.contactForCustom || '@Martynov_DA';
       setError(`Заявка отправлена. Мы свяжемся с вами в Telegram. Для ускорения можно написать ${contact}`);
     } catch (error: any) {
       const details = error.response?.data?.details || error.response?.data?.error;
@@ -316,7 +316,7 @@ export default function GeneratePage() {
                 </button>
               </div>
               <p className="text-slate-400 text-xs mt-2">
-                Контакт: {generationLimit?.contactForCustom || plansData?.contactForCustom || '@manager'}
+                Контакт: {generationLimit?.contactForCustom || plansData?.contactForCustom || '@Martynov_DA'}
               </p>
             </div>
           </div>

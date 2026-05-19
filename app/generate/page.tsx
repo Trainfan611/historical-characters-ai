@@ -288,7 +288,8 @@ export default function GeneratePage() {
           </div>
         )}
 
-        {subscriptionStatus?.isSubscribed && (
+        {/* Временно скрыто: плашка подписки pro100 */}
+        {false && subscriptionStatus?.isSubscribed && (
           <div className="mb-6 flex justify-center">
             <div className="w-full max-w-3xl bg-sky-900/20 border border-sky-500/40 rounded-xl px-6 py-4 text-center">
               <p className="text-sky-100 text-sm">

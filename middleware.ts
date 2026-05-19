@@ -13,6 +13,9 @@ export default withAuth(
     return NextResponse.next();
   },
   {
+    pages: {
+      signIn: '/login',
+    },
     callbacks: {
       authorized: ({ token }) => {
         // Разрешаем доступ только авторизованным пользователям
@@ -24,5 +27,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ['/generate/:path*', '/profile/:path*'],
+  matcher: ['/generate', '/generate/:path*', '/profile', '/profile/:path*'],
 };

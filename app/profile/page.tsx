@@ -19,7 +19,7 @@ export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [generations, setGenerations] = useState<Generation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [generationsLoading, setGenerationsLoading] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     isSubscribed: boolean;
   } | null>(null);
@@ -28,7 +28,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login');
+      router.push('/login?callbackUrl=/profile');
     } else if (status === 'authenticated') {
       fetchGenerations();
       loadSubscriptionAndTariff();
@@ -36,13 +36,14 @@ export default function ProfilePage() {
   }, [status, router]);
 
   const fetchGenerations = async () => {
+    setGenerationsLoading(true);
     try {
       const response = await axios.get('/api/generations');
       setGenerations(response.data.generations || []);
     } catch (error) {
       console.error('Error fetching generations:', error);
     } finally {
-      setLoading(false);
+      setGenerationsLoading(false);
     }
   };
 
@@ -124,7 +125,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (status === 'loading' || loading) {
+  if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
@@ -216,7 +217,11 @@ export default function ProfilePage() {
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-2xl font-semibold mb-6">История генераций</h2>
           
-          {generations.length === 0 ? (
+          {generationsLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+            </div>
+          ) : generations.length === 0 ? (
             <p className="text-gray-500 text-center py-12">
               У вас пока нет генераций. <a href="/generate" className="text-blue-600 hover:underline">Создайте первую!</a>
             </p>
